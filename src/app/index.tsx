@@ -49,6 +49,7 @@ export default function LoginScreen() {
       style={{ backgroundColor: theme.background }}
       contentContainerStyle={styles.container}
     >
+      <View style={styles.contentWrapper}>
       {/* Barra superior: cambiar tema + idioma */}
       <View style={styles.topBar}>
         <TouchableOpacity onPress={toggleTheme} style={styles.themeToggle}>
@@ -62,17 +63,29 @@ export default function LoginScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Logos */}
+      {/* Logos — centrados. Los recuadros son espacio reservado para tus imágenes reales
+          (logo de Astra y el ícono del corazón). Cuando tengas los archivos, reemplaza
+          cada <View style={styles.logoPlaceholder}> por <Image source={require(...)} />. */}
       <View style={styles.logosRow}>
-        <Text style={styles.astraLogo}>Astra</Text>
+        <View style={styles.logoPlaceholder}>
+          <Ionicons name="image-outline" size={20} color="#94A3B8" />
+        </View>
+
         <View style={styles.logoDivider} />
-        <View>
-          <Text style={[styles.appName, { color: theme.accent }]}>Yo te cuido</Text>
+
+        <View style={styles.logoPlaceholder}>
+          <Ionicons name="image-outline" size={20} color="#94A3B8" />
+        </View>
+
+        <View style={styles.wordmarkBlock}>
+          <Text style={styles.wordmark}>
+            Yo te <Text style={{ color: theme.accent }}>cuido</Text>
+          </Text>
           <Text style={styles.appTagline}>Tu salud, nuestra prioridad</Text>
         </View>
       </View>
 
-      {/* Titular */}
+      {/* Titular, centrado */}
       <Text style={[styles.headline, { color: theme.accent }]}>{theme.headline}</Text>
 
       {/* Placeholder de ilustración — reemplazar con el arte real cuando esté listo */}
@@ -117,7 +130,7 @@ export default function LoginScreen() {
       </TouchableOpacity>
 
       {/* Botón de login con degradado */}
-      <TouchableOpacity onPress={handleLogin} disabled={loading}>
+      <TouchableOpacity onPress={handleLogin} disabled={loading} style={styles.loginButtonWrapper}>
         <LinearGradient
           colors={theme.gradientColors}
           start={{ x: 0, y: 0 }}
@@ -139,12 +152,13 @@ export default function LoginScreen() {
         <View style={styles.dividerLine} />
       </View>
 
-      {/* Google (visual, todavía no conectado) */}
+      {/* Google — el espacio del ícono queda vacío, listo para tu ícono a color.
+          Reemplaza <View style={styles.googleIconPlaceholder}> por tu <Image>. */}
       <TouchableOpacity
         style={styles.googleButton}
         onPress={() => Alert.alert('Próximamente', 'El login con Google se conecta en un paso aparte.')}
       >
-        <Ionicons name="logo-google" size={18} color="#334155" />
+        <View style={styles.googleIconPlaceholder} />
         <Text style={styles.googleButtonText}>Continuar con Google</Text>
       </TouchableOpacity>
 
@@ -153,6 +167,7 @@ export default function LoginScreen() {
         <Link href="/register">
           <Text style={[styles.registerLink, { color: theme.accent }]}>Regístrate</Text>
         </Link>
+      </View>
       </View>
     </ScrollView>
   );
@@ -163,12 +178,25 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 24,
     paddingTop: 50,
+    alignItems: 'center',
+  },
+  // Limita el ancho en pantallas anchas (navegador/tablet) para que se vea
+  // como un teléfono y quede centrado, en vez de estirarse de más.
+  contentWrapper: {
+    width: '100%',
+    maxWidth: 420,
+    alignSelf: 'center',
+    alignItems: 'center',
+  },
+  loginButtonWrapper: {
+    width: '100%',
   },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    width: '100%',
+    marginBottom: 24,
   },
   themeToggle: {
     flexDirection: 'row',
@@ -191,22 +219,35 @@ const styles = StyleSheet.create({
   logosRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    justifyContent: 'flex-start',
+    width: '100%',
+    marginBottom: 12,
   },
-  astraLogo: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#2563EB',
+  logoPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#CBD5E1',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F8FAFC',
   },
   logoDivider: {
     width: 1,
-    height: 24,
+    height: 28,
     backgroundColor: '#CBD5E1',
-    marginHorizontal: 12,
+    marginHorizontal: 10,
   },
-  appName: {
+  wordmarkBlock: {
+    marginLeft: 10,
+    alignItems: 'flex-start',
+  },
+  wordmark: {
     fontSize: 16,
     fontWeight: '700',
+    color: '#1E293B',
   },
   appTagline: {
     fontSize: 10,
@@ -215,9 +256,11 @@ const styles = StyleSheet.create({
   headline: {
     fontSize: 24,
     fontWeight: '700',
+    textAlign: 'center',
     marginBottom: 16,
   },
   illustration: {
+    width: '100%',
     height: 160,
     borderRadius: 20,
     alignItems: 'center',
@@ -238,6 +281,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    width: '100%',
   },
   inputIcon: {
     marginRight: 8,
@@ -259,6 +303,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
+    width: '100%',
   },
   loginButtonText: {
     color: '#fff',
@@ -269,6 +314,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginVertical: 20,
+    width: '100%',
   },
   dividerLine: {
     flex: 1,
@@ -290,6 +336,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 14,
     backgroundColor: '#fff',
+    width: '100%',
+  },
+  googleIconPlaceholder: {
+    width: 18,
+    height: 18,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#CBD5E1',
   },
   googleButtonText: {
     fontSize: 14,

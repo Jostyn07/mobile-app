@@ -8,25 +8,21 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
+  Image,
 } from 'react-native';
 import { Link, router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { signIn } from '../config/authService';
-import { themes, ThemeName } from '../theme/themes';
+import { useAppTheme } from '../theme/ThemeContext';
 
 export default function LoginScreen() {
-  const [themeName, setThemeName] = useState<ThemeName>('pink');
-  const theme = themes[themeName];
+  const { themeName, theme, toggleTheme } = useAppTheme();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  function toggleTheme() {
-    setThemeName((current) => (current === 'pink' ? 'blue' : 'pink'));
-  }
 
   async function handleLogin() {
     if (!email || !password) {
@@ -63,35 +59,27 @@ export default function LoginScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Logos — centrados. Los recuadros son espacio reservado para tus imágenes reales
-          (logo de Astra y el ícono del corazón). Cuando tengas los archivos, reemplaza
-          cada <View style={styles.logoPlaceholder}> por <Image source={require(...)} />. */}
-      <View style={styles.logosRow}>
-        <View style={styles.logoPlaceholder}>
-          <Ionicons name="image-outline" size={20} color="#94A3B8" />
-        </View>
-
-        <View style={styles.logoDivider} />
-
-        <View style={styles.logoPlaceholder}>
-          <Ionicons name="image-outline" size={20} color="#94A3B8" />
-        </View>
-
-        <View style={styles.wordmarkBlock}>
-          <Text style={styles.wordmark}>
-            Yo te <Text style={{ color: theme.accent }}>cuido</Text>
-          </Text>
-          <Text style={styles.appTagline}>Tu salud, nuestra prioridad</Text>
-        </View>
-      </View>
+      {/* Logos de marca — imagen fija, no cambia con el tema (es la identidad de marca) */}
+      <Image
+        source={require('../../assets/images/logos.png')}
+        style={styles.logosImage}
+        resizeMode="contain"
+      />
 
       {/* Titular, centrado */}
       <Text style={[styles.headline, { color: theme.accent }]}>{theme.headline}</Text>
 
-      {/* Placeholder de ilustración — reemplazar con el arte real cuando esté listo */}
-      <View style={[styles.illustration, { backgroundColor: theme.illustrationBg }]}>
-        <Ionicons name="water" size={40} color={theme.accent} />
-        <Text style={styles.illustrationHint}>Ilustración pendiente</Text>
+      {/* Ilustración: cambia según el tema activo */}
+      <View style={styles.illustration}>
+        <Image
+          source={
+            themeName === 'pink'
+              ? require('../../assets/images/mujer.png')
+              : require('../../assets/images/hombre.png')
+          }
+          style={styles.illustrationImage}
+          resizeMode="cover"
+        />
       </View>
 
       {/* Campos */}
@@ -216,42 +204,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#5B7A8C',
   },
-  logosRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    width: '100%',
-    marginBottom: 12,
-  },
-  logoPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: '#CBD5E1',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F8FAFC',
-  },
-  logoDivider: {
-    width: 1,
-    height: 28,
-    backgroundColor: '#CBD5E1',
-    marginHorizontal: 10,
-  },
-  wordmarkBlock: {
-    marginLeft: 10,
-    alignItems: 'flex-start',
-  },
-  wordmark: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1E293B',
-  },
-  appTagline: {
-    fontSize: 10,
-    color: '#94A3B8',
+  logosImage: {
+    width: '70%',
+    height: 50,
+    alignSelf: 'flex-start',
+    marginBottom: 16,
   },
   headline: {
     fontSize: 24,
@@ -261,16 +218,14 @@ const styles = StyleSheet.create({
   },
   illustration: {
     width: '100%',
-    height: 160,
+    height: 200,
     borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: 'hidden',
     marginBottom: 20,
   },
-  illustrationHint: {
-    fontSize: 11,
-    color: '#64748B',
-    marginTop: 6,
+  illustrationImage: {
+    width: '100%',
+    height: '100%',
   },
   inputWrapper: {
     flexDirection: 'row',
@@ -290,6 +245,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     fontSize: 15,
+    outlineStyle: 'none',
   },
   forgotLink: {
     alignSelf: 'flex-end',

@@ -7,11 +7,16 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  ScrollView,
+  Image,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { confirmSignUp } from '../config/authService';
+import { useAppTheme } from '../theme/ThemeContext';
 
 export default function ConfirmScreen() {
+  const { theme } = useAppTheme();
   const { email } = useLocalSearchParams<{ email: string }>();
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,52 +39,82 @@ export default function ConfirmScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Confirma tu correo</Text>
-      <Text style={styles.subtitle}>
-        Enviamos un código a {email}. Ingrésalo abajo.
-      </Text>
+    <ScrollView
+      style={{ backgroundColor: theme.background }}
+      contentContainerStyle={styles.container}
+    >
+      <View style={styles.contentWrapper}>
+        <Image
+          source={require('../../assets/images/logos.png')}
+          style={styles.logosImage}
+          resizeMode="contain"
+        />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Código de 6 dígitos"
-        keyboardType="number-pad"
-        value={code}
-        onChangeText={setCode}
-      />
+        <Text style={[styles.title, { color: theme.accent }]}>Confirma tu correo</Text>
+        <Text style={styles.subtitle}>
+          Enviamos un código a {email}. Ingrésalo abajo.
+        </Text>
 
-      <TouchableOpacity style={styles.button} onPress={handleConfirm} disabled={loading}>
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Confirmar</Text>
-        )}
-      </TouchableOpacity>
-    </View>
+        <TextInput
+          style={styles.input}
+          placeholder="Código de 6 dígitos"
+          keyboardType="number-pad"
+          value={code}
+          onChangeText={setCode}
+        />
+
+        <TouchableOpacity onPress={handleConfirm} disabled={loading} style={styles.buttonWrapper}>
+          <LinearGradient
+            colors={theme.gradientColors}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.button}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Confirmar</Text>
+            )}
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: 'center',
+    flexGrow: 1,
     padding: 24,
-    backgroundColor: '#F5FAFF',
+    paddingTop: 50,
+    alignItems: 'center',
+  },
+  contentWrapper: {
+    width: '100%',
+    maxWidth: 420,
+    alignSelf: 'center',
+    alignItems: 'center',
+  },
+  logosImage: {
+    width: '70%',
+    height: 50,
+    alignSelf: 'flex-start',
+    marginBottom: 24,
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
-    textAlign: 'center',
-    color: '#1D6FA5',
-    marginBottom: 10,
+    marginBottom: 8,
+    alignSelf: 'flex-start',
   },
   subtitle: {
     fontSize: 14,
-    textAlign: 'center',
-    color: '#5B7A8C',
-    marginBottom: 30,
+    color: '#64748B',
+    marginBottom: 24,
+    alignSelf: 'flex-start',
   },
   input: {
+    width: '100%',
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 14,
@@ -88,17 +123,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: 4,
     borderWidth: 1,
-    borderColor: '#DCE7EE',
+    borderColor: '#E2E8F0',
+    outlineStyle: 'none',
+  },
+  buttonWrapper: {
+    width: '100%',
   },
   button: {
-    backgroundColor: '#1D6FA5',
     borderRadius: 12,
-    padding: 16,
+    paddingVertical: 16,
     alignItems: 'center',
+    width: '100%',
   },
   buttonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

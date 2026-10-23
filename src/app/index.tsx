@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,12 @@ import {
   StyleSheet,
   Animated,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppTheme } from '../theme/ThemeContext';
+import { hasValidSession } from '../config/authService';
 import { BorderRadius, FontSize, Spacing, Shadow } from '../constants/theme';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -20,6 +22,7 @@ const PROGRESS_DURATION = 1800;
 export default function SplashScreen() {
   const { theme } = useAppTheme();
   const progress = useRef(new Animated.Value(0)).current;
+  const [checking, setChecking] = useState(false);
 
   useEffect(() => {
     Animated.timing(progress, {
@@ -34,8 +37,10 @@ export default function SplashScreen() {
     outputRange: [0, BAR_WIDTH * 0.6],
   });
 
-  function handleStart() {
-    router.replace('./login');
+  async function handleStart() {
+    setChecking(true);
+    const loggedIn = await hasValidSession();
+    router.replace(loggedIn ? '/(tabs)' : '/login');
   }
 
   return (
@@ -61,6 +66,7 @@ export default function SplashScreen() {
       <View style={styles.bottom}>
         <TouchableOpacity
           onPress={handleStart}
+          disabled={checking}
           activeOpacity={0.85}
           style={styles.btnWrap}
         >
@@ -70,7 +76,9 @@ export default function SplashScreen() {
             end={{ x: 1, y: 0 }}
             style={styles.btn}
           >
-            <Text style={styles.btnText}>Comenzar</Text>
+            {checking
+              ? <ActivityIndicator color="#fff" />
+              : <Text style={styles.btnText}>Comenzar</Text>}
           </LinearGradient>
         </TouchableOpacity>
       </View>

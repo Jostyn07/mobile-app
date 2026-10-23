@@ -2,141 +2,167 @@ import { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
-  ActivityIndicator,
   ScrollView,
   Image,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { confirmSignUp } from '../../config/authService';
+import { KeyRound } from 'lucide-react-native';
+import {
+  confirmSignUp,
+  resendConfirmationCode,
+  getAuthErrorMessage,
+} from '../../config/authService';
 import { useAppTheme } from '../../theme/ThemeContext';
+import { FontSize, Spacing, Layout } from '../../constants/theme';
+import AuthInput from '../../components/auth/AuthInput';
+import GradientButton from '../../components/auth/GradientButton';
+import FormBanner from '../../components/auth/FormBanner';
+import BackButton from '../../components/auth/BackButton';
+import { useCooldown } from '../../hooks/use-cooldown';
 
 export default function ConfirmScreen() {
   const { theme } = useAppTheme();
-  const { email } = useLocalSearchParams<{ email: string }>();
+  const { email = '' } = useLocalSearchParams<{ email: string }>();
+
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  const cooldown = useCooldown(30);
 
   async function handleConfirm() {
-    if (!code) {
-      Alert.alert('Falta el código', 'Revisa tu correo e ingresa el código recibido.');
+    setError(null);
+    setInfo(null);
+    if (code.trim().length !== 6) {
+      setError('Ingresa el código de 6 dígitos.');
       return;
     }
     setLoading(true);
     try {
       await confirmSignUp(email, code);
-      Alert.alert('¡Cuenta confirmada!', 'Ya puedes iniciar sesión.');
-      router.replace('./login');
+      router.replace({ pathname: '/login', params: { email, notice: 'confirmed' } });
     } catch (err: any) {
-      Alert.alert('Código incorrecto', err.message ?? 'Intenta de nuevo.');
+      setError(getAuthErrorMessage(err));
     } finally {
       setLoading(false);
     }
   }
 
+  async function handleResend() {
+    setError(null);
+    setInfo(null);
+    try {
+      await resendConfirmationCode(email);
+      setInfo('Te enviamos un código nuevo.');
+      cooldown.start(30);
+    } catch (err: any) {
+      setError(getAuthErrorMessage(err));
+    }
+  }
+
   return (
-    <ScrollView
-      style={{ backgroundColor: theme.background }}
-      contentContainerStyle={styles.container}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.contentWrapper}>
-        <Image
-          source={require('../../../assets/images/logos.png')}
-          style={styles.logosImage}
-          resizeMode="contain"
-        />
+      <ScrollView
+        style={{ backgroundColor: theme.background }}
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.content}>
+          <BackButton />
 
-        <Text style={[styles.title, { color: theme.accent }]}>Confirma tu correo</Text>
-        <Text style={styles.subtitle}>
-          Enviamos un código a {email}. Ingrésalo abajo.
-        </Text>
+          <Image
+            source={require('../../../assets/images/logos.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Código de 6 dígitos"
-          keyboardType="number-pad"
-          value={code}
-          onChangeText={setCode}
-        />
+          <Text style={[styles.title, { color: theme.accent }]}>Confirma tu correo</Text>
+          <Text style={styles.subtitle}>
+            Enviamos un código a <Text style={styles.email}>{email}</Text>
+          </Text>
 
-        <TouchableOpacity onPress={handleConfirm} disabled={loading} style={styles.buttonWrapper}>
-          <LinearGradient
-            colors={theme.gradientColors}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.button}
+          {error && <FormBanner type="error" message={error} />}
+          {info && <FormBanner type="success" message={info} />}
+
+          <AuthInput
+            icon={KeyRound}
+            placeholder="Código de 6 dígitos"
+            keyboardType="number-pad"
+            autoComplete="one-time-code"
+            textContentType="oneTimeCode"
+            maxLength={6}
+            value={code}
+            onChangeText={(t) => setCode(t.replace(/\D/g, ''))}
+            onSubmitEditing={handleConfirm}
+            style={styles.codeInput}
+          />
+
+          <GradientButton title="Confirmar" onPress={handleConfirm} loading={loading} />
+
+          <TouchableOpacity
+            onPress={handleResend}
+            disabled={cooldown.active}
+            style={styles.resendWrap}
           >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Confirmar</Text>
-            )}
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+            <Text style={[styles.resend, { color: cooldown.active ? '#94A3B8' : theme.accent }]}>
+              {cooldown.active ? `Reenviar código en ${cooldown.seconds}s` : 'Reenviar código'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    padding: 24,
-    paddingTop: 50,
-    alignItems: 'center',
+    paddingHorizontal: Spacing[6],
+    paddingTop: Spacing[12],
+    paddingBottom: Spacing[8],
   },
-  contentWrapper: {
+  content: {
     width: '100%',
-    maxWidth: 420,
+    maxWidth: Layout.maxContentWidth,
     alignSelf: 'center',
-    alignItems: 'center',
   },
-  logosImage: {
-    width: '70%',
-    height: 50,
-    alignSelf: 'flex-start',
-    marginBottom: 24,
+  logo: {
+    width: '65%',
+    height: 44,
+    marginBottom: Spacing[6],
   },
   title: {
-    fontSize: 22,
+    fontSize: FontSize['2xl'],
     fontWeight: '700',
-    marginBottom: 8,
-    alignSelf: 'flex-start',
+    marginBottom: Spacing[2],
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: FontSize.md,
     color: '#64748B',
-    marginBottom: 24,
-    alignSelf: 'flex-start',
+    marginBottom: Spacing[5],
   },
-  input: {
-    width: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 20,
-    fontSize: 18,
-    textAlign: 'center',
-    letterSpacing: 4,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+  email: {
+    fontWeight: '700',
+    color: '#334155',
   },
-  buttonWrapper: {
-    width: '100%',
+  codeInput: {
+    fontSize: FontSize.xl,
+    letterSpacing: 6,
   },
-  button: {
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    width: '100%',
+  resendWrap: {
+    alignSelf: 'center',
+    marginTop: Spacing[5],
+    padding: Spacing[2],
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
+  resend: {
+    fontSize: FontSize.sm,
     fontWeight: '700',
   },
 });

@@ -2,173 +2,164 @@ import { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
-  ActivityIndicator,
   ScrollView,
   Image,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
-import { Link, router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Mail, Lock, Eye, EyeOff, Palette, ChevronDown } from 'lucide-react-native';
-import { signIn } from '../../config/authService';
+import { router, useLocalSearchParams } from 'expo-router';
+import { Mail, Lock, Palette, ChevronDown } from 'lucide-react-native';
+import {
+  signIn,
+  resendConfirmationCode,
+  getAuthErrorMessage,
+  isUnconfirmedError,
+  normalizeEmail,
+} from '../../config/authService';
 import { useAppTheme } from '../../theme/ThemeContext';
-import { BorderRadius, FontSize, Spacing, Layout, Shadow } from '../../constants/theme';
+import { BorderRadius, FontSize, Spacing, Layout } from '../../constants/theme';
+import AuthInput from '../../components/auth/AuthInput';
+import GradientButton from '../../components/auth/GradientButton';
+import FormBanner from '../../components/auth/FormBanner';
+import GoogleButton from '../../components/auth/GoogleButton';
+import Divider from '../../components/auth/Divider';
 
 const illustrations = {
   mujer: require('../../../assets/images/mujer.png'),
   hombre: require('../../../assets/images/hombre.png'),
 } as const;
 
+const notices: Record<string, string> = {
+  confirmed: 'Cuenta confirmada. Ya puedes iniciar sesión.',
+  reset: 'Contraseña actualizada. Inicia sesión con la nueva.',
+};
+
 export default function LoginScreen() {
   const { theme, toggleTheme } = useAppTheme();
+  const params = useLocalSearchParams<{ email?: string; notice?: string }>();
 
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(params.email ?? '');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const notice = !error && params.notice ? notices[params.notice] : null;
 
   async function handleLogin() {
-    if (!email || !password) {
-      Alert.alert('Faltan datos', 'Ingresa tu correo y contraseña.');
+    setError(null);
+    if (!email.trim() || !password) {
+      setError('Ingresa tu correo y contraseña.');
       return;
     }
     setLoading(true);
     try {
       await signIn(email, password);
-      router.replace('../(tabs)');
+      router.replace('/(tabs)');
     } catch (err: any) {
-      Alert.alert('No se pudo iniciar sesión', err.message ?? 'Intenta de nuevo.');
+      if (isUnconfirmedError(err)) {
+        await resendConfirmationCode(email).catch(() => {});
+        router.push({ pathname: '/confirm', params: { email: normalizeEmail(email) } });
+      } else {
+        setError(getAuthErrorMessage(err));
+      }
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <ScrollView
-      style={{ backgroundColor: theme.background }}
-      contentContainerStyle={styles.container}
-      keyboardShouldPersistTaps="handled"
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.content}>
+      <ScrollView
+        style={{ backgroundColor: theme.background }}
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.content}>
 
-        <View style={styles.topBar}>
-          <TouchableOpacity onPress={toggleTheme} style={styles.themeToggle}>
-            <Palette size={14} color={theme.accent} strokeWidth={2} />
-            <Text style={[styles.themeToggleText, { color: theme.accent }]}>Cambiar tema</Text>
-          </TouchableOpacity>
+          <View style={styles.topBar}>
+            <TouchableOpacity onPress={toggleTheme} style={styles.themeToggle}>
+              <Palette size={14} color={theme.accent} strokeWidth={2} />
+              <Text style={[styles.themeToggleText, { color: theme.accent }]}>Cambiar tema</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity style={styles.langSelector}>
-            <Text style={styles.langText}>Español</Text>
-            <ChevronDown size={12} color="#64748B" strokeWidth={2} />
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity style={styles.langSelector}>
+              <Text style={styles.langText}>Español</Text>
+              <ChevronDown size={12} color="#64748B" strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
 
-        <Image
-          source={require('../../../assets/images/logos.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-
-        <Text style={[styles.headline, { color: theme.accent }]}>{theme.headline}</Text>
-
-        <View style={[styles.illustrationWrap, { backgroundColor: theme.illustrationBg }]}>
           <Image
-            source={illustrations[theme.illustration]}
-            style={styles.illustration}
-            resizeMode="cover"
+            source={require('../../../assets/images/logos.png')}
+            style={styles.logo}
+            resizeMode="contain"
           />
-        </View>
 
-        <View style={[styles.inputRow, Shadow.sm]}>
-          <Mail size={18} color="#94A3B8" strokeWidth={2} style={styles.inputIcon} />
-          <TextInput
-            style={styles.input}
+          <Text style={[styles.headline, { color: theme.accent }]}>{theme.headline}</Text>
+
+          <View style={[styles.illustrationWrap, { backgroundColor: theme.illustrationBg }]}>
+            <Image
+              source={illustrations[theme.illustration]}
+              style={styles.illustration}
+              resizeMode="cover"
+            />
+          </View>
+
+          {error && <FormBanner type="error" message={error} />}
+          {notice && <FormBanner type="success" message={notice} />}
+
+          <AuthInput
+            icon={Mail}
             placeholder="Correo electrónico"
-            placeholderTextColor="#94A3B8"
             autoCapitalize="none"
             keyboardType="email-address"
+            autoComplete="email"
+            textContentType="emailAddress"
             value={email}
             onChangeText={setEmail}
           />
-        </View>
 
-        <View style={[styles.inputRow, Shadow.sm]}>
-          <Lock size={18} color="#94A3B8" strokeWidth={2} style={styles.inputIcon} />
-          <TextInput
-            style={styles.input}
+          <AuthInput
+            icon={Lock}
+            secure
             placeholder="Contraseña"
-            placeholderTextColor="#94A3B8"
-            secureTextEntry={!showPassword}
+            autoCapitalize="none"
+            autoComplete="password"
+            textContentType="password"
             value={password}
             onChangeText={setPassword}
+            onSubmitEditing={handleLogin}
+            returnKeyType="go"
           />
-          <TouchableOpacity onPress={() => setShowPassword((v) => !v)}>
-            {showPassword
-              ? <EyeOff size={18} color="#94A3B8" strokeWidth={2} />
-              : <Eye size={18} color="#94A3B8" strokeWidth={2} />
-            }
-          </TouchableOpacity>
-        </View>
 
-        <TouchableOpacity
-          style={styles.forgotWrap}
-          onPress={() => router.push('./recover')}
-        >
-          <Text style={[styles.forgotText, { color: theme.accent }]}>
-            ¿Olvidaste tu contraseña?
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={handleLogin}
-          disabled={loading}
-          style={styles.btnWrap}
-          activeOpacity={0.85}
-        >
-          <LinearGradient
-            colors={theme.gradientColors}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.btn}
+          <TouchableOpacity
+            style={styles.forgotWrap}
+            onPress={() => router.push({ pathname: '/recover', params: { email: email.trim() } })}
           >
-            {loading
-              ? <ActivityIndicator color="#fff" />
-              : <Text style={styles.btnText}>Iniciar sesión</Text>
-            }
-          </LinearGradient>
-        </TouchableOpacity>
+            <Text style={[styles.forgotText, { color: theme.accent }]}>
+              ¿Olvidaste tu contraseña?
+            </Text>
+          </TouchableOpacity>
 
-        <View style={styles.divider}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>o continúa con</Text>
-          <View style={styles.dividerLine} />
+          <GradientButton title="Iniciar sesión" onPress={handleLogin} loading={loading} />
+
+          <Divider label="o continúa con" />
+
+          <GoogleButton onError={setError} />
+
+          <View style={styles.registerRow}>
+            <Text style={styles.registerHint}>¿No tienes una cuenta? </Text>
+            <TouchableOpacity onPress={() => router.push('/register')}>
+              <Text style={[styles.registerLink, { color: theme.accent }]}>Regístrate</Text>
+            </TouchableOpacity>
+          </View>
+
         </View>
-
-        <TouchableOpacity
-          style={styles.googleBtn}
-          activeOpacity={0.85}
-          onPress={() => Alert.alert('Próximamente', 'El acceso con Google estará disponible pronto.')}
-        >
-          <Image
-            source={require('../../../assets/images/googleIcon.png')}
-            style={styles.googleIcon}
-            resizeMode="contain"
-          />
-          <Text style={styles.googleText}>Continuar con Google</Text>
-        </TouchableOpacity>
-
-        <View style={styles.registerRow}>
-          <Text style={styles.registerHint}>¿No tienes una cuenta? </Text>
-          <Link href="/register">
-            <Text style={[styles.registerLink, { color: theme.accent }]}>Regístrate</Text>
-          </Link>
-        </View>
-
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -231,25 +222,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing[4],
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: Spacing[3],
-    height: 52,
-  },
-  inputIcon: {
-    marginRight: Spacing[2],
-  },
-  input: {
-    flex: 1,
-    fontSize: FontSize.md,
-    color: '#0F172A',
-  },
   forgotWrap: {
     alignSelf: 'flex-end',
     marginBottom: Spacing[5],
@@ -257,56 +229,6 @@ const styles = StyleSheet.create({
   forgotText: {
     fontSize: FontSize.xs,
     fontWeight: '600',
-  },
-  btnWrap: {
-    width: '100%',
-    borderRadius: BorderRadius.md,
-    overflow: 'hidden',
-  },
-  btn: {
-    paddingVertical: Spacing[4],
-    alignItems: 'center',
-    borderRadius: BorderRadius.md,
-  },
-  btnText: {
-    color: '#fff',
-    fontSize: FontSize.md,
-    fontWeight: '700',
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: Spacing[5],
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E2E8F0',
-  },
-  dividerText: {
-    fontSize: FontSize.xs,
-    color: '#94A3B8',
-    marginHorizontal: Spacing[3],
-  },
-  googleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing[2],
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: BorderRadius.md,
-    paddingVertical: Spacing[3] + 2,
-    backgroundColor: '#fff',
-  },
-  googleIcon: {
-    width: 18,
-    height: 18,
-  },
-  googleText: {
-    fontSize: FontSize.sm,
-    fontWeight: '600',
-    color: '#334155',
   },
   registerRow: {
     flexDirection: 'row',

@@ -17,8 +17,10 @@ const discovery: AuthSession.DiscoveryDocument = {
   revocationEndpoint: `https://${COGNITO_DOMAIN}/oauth2/revoke`,
 };
 
-// URL a la que Google/Cognito devuelven al usuario.
-// En build propio: mobileapp://auth — en Expo Go: exp://<IP>:8081/--/auth
+// URL a la que Cognito devuelve al usuario. Cada entorno genera una distinta:
+//   build propio → mobileapp://auth
+//   Expo Go      → exp://<IP>:8081/--/auth
+//   web local    → http://localhost:8081/auth
 export const googleRedirectUri = AuthSession.makeRedirectUri({
   scheme: 'mobileapp',
   path: 'auth',
@@ -35,6 +37,9 @@ export class GoogleNotConfiguredError extends Error {
 // sesión igual que un login con contraseña. Devuelve false si el usuario cancela.
 export async function signInWithGoogle(): Promise<boolean> {
   if (!COGNITO_DOMAIN) throw new GoogleNotConfiguredError();
+
+  // Debe estar en Cognito → Cliente de aplicación → URL de devolución de llamadas
+  if (__DEV__) console.log('[Google] redirectUri:', googleRedirectUri);
 
   const request = new AuthSession.AuthRequest({
     clientId: COGNITO_CONFIG.ClientId,

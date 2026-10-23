@@ -38,7 +38,7 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await signIn(email, password);
-      router.replace('/home');
+      router.replace('/(tabs)');
     } catch (err: any) {
       Alert.alert('No se pudo iniciar sesión', err.message ?? 'Intenta de nuevo.');
     } finally {
@@ -113,7 +113,10 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.forgotWrap}>
+        <TouchableOpacity
+          style={styles.forgotWrap}
+          onPress={() => router.push('/recover')}
+        >
           <Text style={[styles.forgotText, { color: theme.accent }]}>
             ¿Olvidaste tu contraseña?
           </Text>
@@ -149,13 +152,17 @@ export default function LoginScreen() {
           activeOpacity={0.85}
           onPress={() => Alert.alert('Próximamente', 'El acceso con Google estará disponible pronto.')}
         >
-          <View style={styles.googleIconSlot} />
+          <Image
+            source={require('../../../assets/images/googleIcon.png')}
+            style={styles.googleIcon}
+            resizeMode="contain"
+          />
           <Text style={styles.googleText}>Continuar con Google</Text>
         </TouchableOpacity>
 
         <View style={styles.registerRow}>
           <Text style={styles.registerHint}>¿No tienes una cuenta? </Text>
-          <Link href="/(auth)/register">
+          <Link href="/register">
             <Text style={[styles.registerLink, { color: theme.accent }]}>Regístrate</Text>
           </Link>
         </View>
@@ -292,13 +299,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing[3] + 2,
     backgroundColor: '#fff',
   },
-  googleIconSlot: {
+  googleIcon: {
     width: 18,
     height: 18,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: '#CBD5E1',
   },
   googleText: {
     fontSize: FontSize.sm,

@@ -11,12 +11,11 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { User, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react-native';
 import { signUp } from '../../config/authService';
 import { useAppTheme } from '../../theme/ThemeContext';
 import PasswordRequirements, { isPasswordValid } from '../../components/PasswordRequirements';
 
-// Traduce los errores técnicos de Cognito a mensajes que un usuario entiende.
 function getFriendlyErrorMessage(err: any): string {
   switch (err.name) {
     case 'UsernameExistsException':
@@ -72,7 +71,7 @@ export default function RegisterScreen() {
     >
       <View style={styles.contentWrapper}>
         <Image
-          source={require('../../assets/images/logos.png')}
+          source={require('../../../assets/images/logos.png')}
           style={styles.logosImage}
           resizeMode="contain"
         />
@@ -81,13 +80,13 @@ export default function RegisterScreen() {
 
         {errorMessage && (
           <View style={styles.errorBanner}>
-            <Ionicons name="alert-circle" size={16} color="#DC2626" />
+            <AlertCircle size={16} color="#DC2626" strokeWidth={2} />
             <Text style={styles.errorText}>{errorMessage}</Text>
           </View>
         )}
 
         <View style={styles.inputWrapper}>
-          <Ionicons name="person-outline" size={18} color="#94A3B8" style={styles.inputIcon} />
+          <User size={18} color="#94A3B8" strokeWidth={2} style={styles.inputIcon} />
           <TextInput
             style={styles.input}
             placeholder="Nombre"
@@ -97,7 +96,7 @@ export default function RegisterScreen() {
         </View>
 
         <View style={styles.inputWrapper}>
-          <Ionicons name="person-outline" size={18} color="#94A3B8" style={styles.inputIcon} />
+          <User size={18} color="#94A3B8" strokeWidth={2} style={styles.inputIcon} />
           <TextInput
             style={styles.input}
             placeholder="Apellido"
@@ -107,7 +106,7 @@ export default function RegisterScreen() {
         </View>
 
         <View style={styles.inputWrapper}>
-          <Ionicons name="mail-outline" size={18} color="#94A3B8" style={styles.inputIcon} />
+          <Mail size={18} color="#94A3B8" strokeWidth={2} style={styles.inputIcon} />
           <TextInput
             style={styles.input}
             placeholder="Correo electrónico"
@@ -119,7 +118,7 @@ export default function RegisterScreen() {
         </View>
 
         <View style={styles.inputWrapper}>
-          <Ionicons name="lock-closed-outline" size={18} color="#94A3B8" style={styles.inputIcon} />
+          <Lock size={18} color="#94A3B8" strokeWidth={2} style={styles.inputIcon} />
           <TextInput
             style={styles.input}
             placeholder="Contraseña"
@@ -128,15 +127,13 @@ export default function RegisterScreen() {
             onChangeText={setPassword}
           />
           <TouchableOpacity onPress={() => setShowPassword((v) => !v)}>
-            <Ionicons
-              name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-              size={18}
-              color="#94A3B8"
-            />
+            {showPassword
+              ? <EyeOff size={18} color="#94A3B8" strokeWidth={2} />
+              : <Eye size={18} color="#94A3B8" strokeWidth={2} />
+            }
           </TouchableOpacity>
         </View>
 
-        {/* Checklist que se marca en vivo mientras el usuario escribe */}
         <PasswordRequirements password={password} accentColor={theme.accent} />
 
         <TouchableOpacity onPress={handleRegister} disabled={loading} style={styles.buttonWrapper}>
@@ -225,7 +222,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     fontSize: 15,
-    outlineStyle: 'none' as any,
   },
   buttonWrapper: {
     width: '100%',

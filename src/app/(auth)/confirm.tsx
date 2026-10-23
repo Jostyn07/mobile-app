@@ -12,8 +12,8 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { confirmSignUp } from '../config/authService';
-import { useAppTheme } from '../theme/ThemeContext';
+import { confirmSignUp } from '../../config/authService';
+import { useAppTheme } from '../../theme/ThemeContext';
 
 export default function ConfirmScreen() {
   const { theme } = useAppTheme();
@@ -30,7 +30,7 @@ export default function ConfirmScreen() {
     try {
       await confirmSignUp(email, code);
       Alert.alert('¡Cuenta confirmada!', 'Ya puedes iniciar sesión.');
-      router.replace('/');
+      router.replace('/login');
     } catch (err: any) {
       Alert.alert('Código incorrecto', err.message ?? 'Intenta de nuevo.');
     } finally {
@@ -45,7 +45,7 @@ export default function ConfirmScreen() {
     >
       <View style={styles.contentWrapper}>
         <Image
-          source={require('../../assets/images/logos.png')}
+          source={require('../../../assets/images/logos.png')}
           style={styles.logosImage}
           resizeMode="contain"
         />
@@ -124,7 +124,6 @@ const styles = StyleSheet.create({
     letterSpacing: 4,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    outlineStyle: 'none' as any,
   },
   buttonWrapper: {
     width: '100%',

@@ -30,7 +30,7 @@ export default function ConfirmScreen() {
     try {
       await confirmSignUp(email, code);
       Alert.alert('¡Cuenta confirmada!', 'Ya puedes iniciar sesión.');
-      router.replace('/login');
+      router.replace('./login');
     } catch (err: any) {
       Alert.alert('Código incorrecto', err.message ?? 'Intenta de nuevo.');
     } finally {

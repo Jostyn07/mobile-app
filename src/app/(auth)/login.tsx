@@ -38,7 +38,7 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await signIn(email, password);
-      router.replace('/(tabs)');
+      router.replace('../(tabs)');
     } catch (err: any) {
       Alert.alert('No se pudo iniciar sesión', err.message ?? 'Intenta de nuevo.');
     } finally {
@@ -115,7 +115,7 @@ export default function LoginScreen() {
 
         <TouchableOpacity
           style={styles.forgotWrap}
-          onPress={() => router.push('/recover')}
+          onPress={() => router.push('./recover')}
         >
           <Text style={[styles.forgotText, { color: theme.accent }]}>
             ¿Olvidaste tu contraseña?

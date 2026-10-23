@@ -35,7 +35,7 @@ export default function SplashScreen() {
   });
 
   function handleStart() {
-    router.replace('/login');
+    router.replace('./login');
   }
 
   return (

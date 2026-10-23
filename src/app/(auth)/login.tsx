@@ -38,12 +38,14 @@ const notices: Record<string, string> = {
 
 export default function LoginScreen() {
   const { theme, toggleTheme } = useAppTheme();
-  const params = useLocalSearchParams<{ email?: string; notice?: string }>();
+  const params = useLocalSearchParams<{ email?: string; notice?: string; error?: string }>();
 
   const [email, setEmail] = useState(params.email ?? '');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    params.error === 'google' ? 'No se pudo continuar con Google. Intenta de nuevo.' : null,
+  );
   const notice = !error && params.notice ? notices[params.notice] : null;
 
   async function handleLogin() {

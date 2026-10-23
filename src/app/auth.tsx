@@ -1,18 +1,28 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
-import { router } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
+import { router, useLocalSearchParams } from 'expo-router';
 import { hasValidSession } from '../config/authService';
+import { completeGoogleRedirect } from '../config/googleAuth';
 import { BrandColors } from '../constants/theme';
 
 // Destino de retorno del login con Google (mobileapp://auth · localhost:8081/auth).
-// Web: entrega el código a la ventana principal y cierra la ventana emergente.
-// Móvil: el login lo completa GoogleButton; si el usuario queda aquí, se le redirige.
-WebBrowser.maybeCompleteAuthSession();
-
 export default function AuthCallbackScreen() {
+  const params = useLocalSearchParams<{ code?: string; state?: string; error?: string }>();
+  const handled = useRef(false);
+
   useEffect(() => {
-    if (Platform.OS === 'web') return;
+    if (handled.current) return;
+    handled.current = true;
+
+    // Web: aquí se termina el login (la página volvió de Google con ?code=).
+    if (Platform.OS === 'web') {
+      completeGoogleRedirect(params)
+        .then(() => router.replace('/(tabs)'))
+        .catch(() => router.replace({ pathname: '/login', params: { error: 'google' } }));
+      return;
+    }
+
+    // Móvil: el login lo completa GoogleButton; si el usuario queda aquí, se le redirige.
     const id = setTimeout(async () => {
       const loggedIn = await hasValidSession();
       router.replace(loggedIn ? '/(tabs)' : '/login');

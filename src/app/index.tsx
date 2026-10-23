@@ -13,6 +13,7 @@ import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppTheme } from '../theme/ThemeContext';
 import { hasValidSession } from '../config/authService';
+import { routeAfterLogin } from '../config/postLogin';
 import { BorderRadius, FontSize, Spacing, Shadow } from '../constants/theme';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -40,7 +41,8 @@ export default function SplashScreen() {
   async function handleStart() {
     setChecking(true);
     const loggedIn = await hasValidSession();
-    router.replace(loggedIn ? '/(tabs)' : '/login');
+    if (loggedIn) await routeAfterLogin();
+    else router.replace('/login');
   }
 
   return (

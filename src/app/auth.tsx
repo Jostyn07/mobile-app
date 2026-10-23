@@ -3,6 +3,7 @@ import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { hasValidSession } from '../config/authService';
 import { completeGoogleRedirect } from '../config/googleAuth';
+import { routeAfterLogin } from '../config/postLogin';
 import { BrandColors } from '../constants/theme';
 
 // Destino de retorno del login con Google (mobileapp://auth · localhost:8081/auth).
@@ -17,7 +18,7 @@ export default function AuthCallbackScreen() {
     // Web: aquí se termina el login (la página volvió de Google con ?code=).
     if (Platform.OS === 'web') {
       completeGoogleRedirect(params)
-        .then(() => router.replace('/(tabs)'))
+        .then(() => routeAfterLogin())
         .catch(() => router.replace({ pathname: '/login', params: { error: 'google' } }));
       return;
     }
@@ -25,7 +26,8 @@ export default function AuthCallbackScreen() {
     // Móvil: el login lo completa GoogleButton; si el usuario queda aquí, se le redirige.
     const id = setTimeout(async () => {
       const loggedIn = await hasValidSession();
-      router.replace(loggedIn ? '/(tabs)' : '/login');
+      if (loggedIn) await routeAfterLogin();
+      else router.replace('/login');
     }, 1500);
     return () => clearTimeout(id);
   }, []);

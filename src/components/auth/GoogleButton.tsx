@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { TouchableOpacity, Text, Image, ActivityIndicator, StyleSheet } from 'react-native';
-import { router } from 'expo-router';
 import { signInWithGoogle, GoogleNotConfiguredError } from '../../config/googleAuth';
+import { routeAfterLogin } from '../../config/postLogin';
 import { BorderRadius, FontSize, Spacing } from '../../constants/theme';
 
 type Props = {
@@ -16,7 +16,7 @@ export default function GoogleButton({ label = 'Continuar con Google', onError }
     setLoading(true);
     try {
       const ok = await signInWithGoogle();
-      if (ok) router.replace('/(tabs)');
+      if (ok) await routeAfterLogin();
     } catch (err: any) {
       onError(
         err instanceof GoogleNotConfiguredError

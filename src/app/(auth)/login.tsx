@@ -19,6 +19,7 @@ import {
   normalizeEmail,
 } from '../../config/authService';
 import { useAppTheme } from '../../theme/ThemeContext';
+import { routeAfterLogin } from '../../config/postLogin';
 import { BorderRadius, FontSize, Spacing, Layout } from '../../constants/theme';
 import AuthInput from '../../components/auth/AuthInput';
 import GradientButton from '../../components/auth/GradientButton';
@@ -57,7 +58,7 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await signIn(email, password);
-      router.replace('/(tabs)');
+      await routeAfterLogin();
     } catch (err: any) {
       if (isUnconfirmedError(err)) {
         await resendConfirmationCode(email).catch(() => {});

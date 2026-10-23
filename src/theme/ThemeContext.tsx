@@ -23,7 +23,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Hook para usar el tema desde cualquier pantalla
 export function useAppTheme() {
   const context = useContext(ThemeContext);
   if (!context) {

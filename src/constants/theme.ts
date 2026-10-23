@@ -1,13 +1,6 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
-
-import '@/global.css';
-
 import { Platform } from 'react-native';
 
-// Paleta de marca yo te cuido
+// ─── Paleta de marca YTC ─────────────────────────────────────────────────────
 export const BrandColors = {
   verdeYTC: '#0A9E8A',
   verdeOscuro: '#07796A',
@@ -15,7 +8,7 @@ export const BrandColors = {
   verdeMedio: '#0BBD9E',
   blanco: '#FFFFFF',
   grisClaro: '#F4F6F8',
-  grisMedio: 'E2E8F0',
+  grisMedio: '#E2E8F0',
   grisTexto: '#64748B',
   grisOscuro: '#334155',
   negro: '#0F172A',
@@ -25,15 +18,16 @@ export const BrandColors = {
   info: '#0369A1',
 } as const;
 
+// ─── Colores del sistema (claro / oscuro) ────────────────────────────────────
 export const Colors = {
   light: {
-    text: '#0F172A',
-    background: '#ffffff',
-    backgroundSecondary: 'FAF6F8',
+    background: '#FFFFFF',
+    backgroundSecondary: '#F4F6F8',
     backgroundElement: '#E8F9F6',
     backgroundSelected: '#D1F5EF',
-    surface:'#0F172A',
-    textSecondary: '#60646C',
+    surface: '#FFFFFF',
+    text: '#0F172A',
+    textSecondary: '#64748B',
     textInverse: '#FFFFFF',
     textMuted: '#94A3B8',
     primary: '#0A9E8A',
@@ -48,33 +42,33 @@ export const Colors = {
   },
   dark: {
     background: '#0F172A',
-    backgoundSecondary: '#1E293B',
+    backgroundSecondary: '#1E293B',
     backgroundElement: '#0D2E2A',
     backgroundSelected: '#0F3D37',
-    surface:'#1E293B',
-    text: '#ffffff',
+    surface: '#1E293B',
+    text: '#F8FAFC',
     textSecondary: '#94A3B8',
     textInverse: '#0F172A',
     textMuted: '#64748B',
-    primary: '#0BBD93',
+    primary: '#0BBD9E',
     primaryDark: '#0A9E8A',
     primaryLight: '#0D2E2A',
     border: '#334155',
     borderFocus: '#0BBD9E',
     error: '#EF4444',
-    warning: 'F59E0B',
-    success: '22C55E',
-    info: '38BDF8',
+    warning: '#F59E0B',
+    success: '#22C55E',
+    info: '#38BDF8',
   },
 } as const;
 
 export type ColorScheme = 'light' | 'dark';
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
-// Tipografía - Nunito
+// ─── Tipografía — Nunito ─────────────────────────────────────────────────────
 export const FontFamily = Platform.select({
   ios: {
-    regular: 'Nunito-regular',
+    regular: 'Nunito-Regular',
     medium: 'Nunito-Medium',
     semiBold: 'Nunito-SemiBold',
     bold: 'Nunito-Bold',
@@ -89,7 +83,7 @@ export const FontFamily = Platform.select({
     semiBold: 'Nunito-SemiBold',
     bold: 'Nunito-Bold',
     extraBold: 'Nunito-ExtraBold',
-    sansRegular: 'NanitoSans-Regular',
+    sansRegular: 'NunitoSans-Regular',
     sansSemiBold: 'NunitoSans-SemiBold',
     sansBold: 'NunitoSans-Bold',
   },
@@ -115,7 +109,8 @@ export const FontSize = {
   '3xl': 28,
   '4xl': 34,
 } as const;
-// Espaciado (base 4px)
+
+// ─── Espaciado (base 4 px) ───────────────────────────────────────────────────
 export const Spacing = {
   1: 4,
   2: 8,
@@ -128,14 +123,15 @@ export const Spacing = {
   12: 48,
   16: 64,
 } as const;
-// Bordes y sombras
+
+// ─── Bordes y sombras ────────────────────────────────────────────────────────
 export const BorderRadius = {
   sm: 8,
   md: 12,
   lg: 16,
   xl: 20,
   full: 9999,
-} as const
+} as const;
 
 export const Shadow = {
   sm: {
@@ -154,17 +150,20 @@ export const Shadow = {
   },
 } as const;
 
-// Iconos - Lucide (24 x 24px, trazo de 2 px)
+// ─── Íconos — Lucide (24 × 24 px, trazo 2 px) ───────────────────────────────
 export const IconSize = { sm: 16, md: 20, lg: 24, xl: 32 } as const;
 export const IconStroke = 2;
 
-// Layout
+// ─── Layout ──────────────────────────────────────────────────────────────────
 export const Layout = {
-  MaxContentWidth: 420,
+  maxContentWidth: 420,
   headerHeight: 56,
   tabBarHeight: 64,
 } as const;
 
+// ─── Temas de personalización (pink = mujer / blue = hombre) ────────────────
+// Complementan la identidad YTC sin reemplazarla.
+// El botón "Cambiar tema" alterna entre los dos; la imagen de inicio cambia con él.
 export type ThemeName = 'pink' | 'blue';
 
 export type AppTheme = {
@@ -173,12 +172,12 @@ export type AppTheme = {
   gradientColors: readonly [string, string];
   accent: string;
   accentLight: string;
-  // Fondo de pantalla y fonde de la ilustración
+  // Fondo de pantalla y fondo de la ilustración
   background: string;
   illustrationBg: string;
-  // Fase principal en la pantalla de inicio
+  // Frase principal en la pantalla de inicio
   headline: string;
-  // imagen de ilustración (Mujer para pink y hombre para blue)
+  // Imagen de ilustración (mujer para pink, hombre para blue)
   illustration: 'mujer' | 'hombre';
 };
 
@@ -188,9 +187,9 @@ export const themes: Record<ThemeName, AppTheme> = {
     gradientColors: ['#F472B6', '#EC4899'],
     accent: '#EC4899',
     accentLight: '#FDF2F8',
-    background: 'FDFCFF',
+    background: '#FDFCFF',
     illustrationBg: '#FBCFE8',
-    headline: 'Tu bien estar \ nos inspira',
+    headline: 'Tu bienestar\nnos inspira',
     illustration: 'mujer',
   },
   blue: {
@@ -200,7 +199,7 @@ export const themes: Record<ThemeName, AppTheme> = {
     accentLight: '#EFF6FF',
     background: '#FAFCFF',
     illustrationBg: '#BFDBFE',
-    headline: 'Tu bienestar \ nos impulsa',
+    headline: 'Tu bienestar\nnos impulsa',
     illustration: 'hombre',
   },
 };

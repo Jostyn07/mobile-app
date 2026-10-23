@@ -18,8 +18,8 @@ import { useAppTheme } from '../../theme/ThemeContext';
 import { BorderRadius, FontSize, Spacing, Layout, Shadow } from '../../constants/theme';
 
 const illustrations = {
-  mujer: require('../../assets/images/mujer.png'),
-  hombre: require('../../assets/images/hombre.png'),
+  mujer: require('../../../assets/images/mujer.png'),
+  hombre: require('../../../assets/images/hombre.png'),
 } as const;
 
 export default function LoginScreen() {
@@ -54,7 +54,6 @@ export default function LoginScreen() {
     >
       <View style={styles.content}>
 
-        {/* Barra superior */}
         <View style={styles.topBar}>
           <TouchableOpacity onPress={toggleTheme} style={styles.themeToggle}>
             <Palette size={14} color={theme.accent} strokeWidth={2} />
@@ -67,17 +66,14 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Logo */}
         <Image
-          source={require('../../assets/images/logos.png')}
+          source={require('../../../assets/images/logos.png')}
           style={styles.logo}
           resizeMode="contain"
         />
 
-        {/* Titular */}
         <Text style={[styles.headline, { color: theme.accent }]}>{theme.headline}</Text>
 
-        {/* Ilustración */}
         <View style={[styles.illustrationWrap, { backgroundColor: theme.illustrationBg }]}>
           <Image
             source={illustrations[theme.illustration]}
@@ -86,7 +82,6 @@ export default function LoginScreen() {
           />
         </View>
 
-        {/* Correo */}
         <View style={[styles.inputRow, Shadow.sm]}>
           <Mail size={18} color="#94A3B8" strokeWidth={2} style={styles.inputIcon} />
           <TextInput
@@ -100,7 +95,6 @@ export default function LoginScreen() {
           />
         </View>
 
-        {/* Contraseña */}
         <View style={[styles.inputRow, Shadow.sm]}>
           <Lock size={18} color="#94A3B8" strokeWidth={2} style={styles.inputIcon} />
           <TextInput
@@ -119,14 +113,12 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ¿Olvidaste tu contraseña? */}
         <TouchableOpacity style={styles.forgotWrap}>
           <Text style={[styles.forgotText, { color: theme.accent }]}>
             ¿Olvidaste tu contraseña?
           </Text>
         </TouchableOpacity>
 
-        {/* Botón principal */}
         <TouchableOpacity
           onPress={handleLogin}
           disabled={loading}
@@ -146,31 +138,21 @@ export default function LoginScreen() {
           </LinearGradient>
         </TouchableOpacity>
 
-        {/* Divisor */}
         <View style={styles.divider}>
           <View style={styles.dividerLine} />
           <Text style={styles.dividerText}>o continúa con</Text>
           <View style={styles.dividerLine} />
         </View>
 
-        {/* Google */}
         <TouchableOpacity
           style={styles.googleBtn}
           activeOpacity={0.85}
-          onPress={() =>
-            Alert.alert('Próximamente', 'El acceso con Google estará disponible pronto.')
-          }
+          onPress={() => Alert.alert('Próximamente', 'El acceso con Google estará disponible pronto.')}
         >
-          {/* Slot para el ícono SVG de Google — reemplazar con <Image> cuando esté disponible */}
-          <Image
-            source={require('../../assets/images/googleIcon.png')}
-            style={styles.googleIcon}
-            resizeMode="contain"
-          />
+          <View style={styles.googleIconSlot} />
           <Text style={styles.googleText}>Continuar con Google</Text>
         </TouchableOpacity>
 
-        {/* Registro */}
         <View style={styles.registerRow}>
           <Text style={styles.registerHint}>¿No tienes una cuenta? </Text>
           <Link href="/(auth)/register">
@@ -336,10 +318,4 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     fontWeight: '700',
   },
-
-  googleIcon: {
-    width: 18,
-    height: 18,
-  },
 });
-

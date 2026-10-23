@@ -9,7 +9,7 @@ export const COGNITO_CONFIG = {
 
 // Dominio del login administrado de Cognito (sin https://).
 // Cognito → User pool → Branding → Domain. Ej: 'yotecuido.auth.us-east-2.amazoncognito.com'
-export const COGNITO_DOMAIN = '';
+export const COGNITO_DOMAIN = 'us-east-22ikaqg4xf.auth.us-east-2.amazoncognito.com';
 
 // ─── Almacenamiento de sesión ────────────────────────────────────────────────
 // Cognito lee la sesión de forma síncrona, pero AsyncStorage es asíncrono.

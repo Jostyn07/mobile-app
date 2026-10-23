@@ -1,9 +1,9 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
-import { themes, ThemeName, Theme } from './themes';
+import { themes, ThemeName, AppTheme } from '../constants/theme';
 
 type ThemeContextValue = {
   themeName: ThemeName;
-  theme: Theme;
+  theme: AppTheme;
   toggleTheme: () => void;
 };
 

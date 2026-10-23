@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   ActivityIndicator,
   ScrollView,
   Image,
@@ -13,8 +12,23 @@ import {
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { signUp } from '../config/authService';
-import { useAppTheme } from '../theme/ThemeContext';
+import { signUp } from '../../config/authService';
+import { useAppTheme } from '../../theme/ThemeContext';
+import PasswordRequirements, { isPasswordValid } from '../../components/PasswordRequirements';
+
+// Traduce los errores técnicos de Cognito a mensajes que un usuario entiende.
+function getFriendlyErrorMessage(err: any): string {
+  switch (err.name) {
+    case 'UsernameExistsException':
+      return 'Ese correo ya está registrado. Inicia sesión o usa otro correo.';
+    case 'InvalidPasswordException':
+      return 'La contraseña no cumple los requisitos de seguridad. Revisa la lista de abajo.';
+    case 'InvalidParameterException':
+      return 'Revisa que todos los campos estén completos y correctos.';
+    default:
+      return err.message ?? 'Ocurrió un error. Intenta de nuevo.';
+  }
+}
 
 export default function RegisterScreen() {
   const { theme } = useAppTheme();
@@ -25,18 +39,27 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function handleRegister() {
+    setErrorMessage(null);
+
     if (!givenName || !familyName || !email || !password) {
-      Alert.alert('Faltan datos', 'Completa todos los campos.');
+      setErrorMessage('Completa todos los campos.');
       return;
     }
+
+    if (!isPasswordValid(password)) {
+      setErrorMessage('Tu contraseña todavía no cumple todos los requisitos de la lista.');
+      return;
+    }
+
     setLoading(true);
     try {
       await signUp(email, password, givenName, familyName);
       router.push({ pathname: '/confirm', params: { email } });
     } catch (err: any) {
-      Alert.alert('No se pudo registrar', err.message ?? 'Intenta de nuevo.');
+      setErrorMessage(getFriendlyErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -55,6 +78,13 @@ export default function RegisterScreen() {
         />
 
         <Text style={[styles.title, { color: theme.accent }]}>Crear cuenta</Text>
+
+        {errorMessage && (
+          <View style={styles.errorBanner}>
+            <Ionicons name="alert-circle" size={16} color="#DC2626" />
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          </View>
+        )}
 
         <View style={styles.inputWrapper}>
           <Ionicons name="person-outline" size={18} color="#94A3B8" style={styles.inputIcon} />
@@ -106,9 +136,8 @@ export default function RegisterScreen() {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.hint}>
-          Mínimo 8 caracteres, con mayúscula, minúscula, número y símbolo.
-        </Text>
+        {/* Checklist que se marca en vivo mientras el usuario escribe */}
+        <PasswordRequirements password={password} accentColor={theme.accent} />
 
         <TouchableOpacity onPress={handleRegister} disabled={loading} style={styles.buttonWrapper}>
           <LinearGradient
@@ -161,6 +190,23 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     alignSelf: 'flex-start',
   },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 16,
+    width: '100%',
+  },
+  errorText: {
+    color: '#B91C1C',
+    fontSize: 13,
+    flex: 1,
+  },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -179,13 +225,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     fontSize: 15,
-    outlineStyle: 'none',
-  },
-  hint: {
-    fontSize: 12,
-    color: '#64748B',
-    marginBottom: 20,
-    alignSelf: 'flex-start',
+    outlineStyle: 'none' as any,
   },
   buttonWrapper: {
     width: '100%',

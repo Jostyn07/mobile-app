@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     letterSpacing: 4,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    outlineStyle: 'none',
+    outlineStyle: 'none' as any,
   },
   buttonWrapper: {
     width: '100%',

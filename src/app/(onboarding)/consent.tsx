@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { router } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FileText, ArrowUpRight, ExternalLink, Check, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { FileText, ArrowUpRight, ChevronRight, Check, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { BorderRadius, FontSize, Spacing, Layout, Shadow } from '../../constants/theme';
-import { PRIVACY_NOTICE_URL } from '../../config/legal';
 import { saveConsent } from '../../config/onboardingStore';
 import { signOut } from '../../config/authService';
 import OnboardingHeader from '../../components/onboarding/OnboardingHeader';
@@ -33,9 +31,6 @@ export default function ConsentScreen() {
 
   const canContinue = ack && choice !== null;
 
-  function openPrivacyNotice() {
-    if (PRIVACY_NOTICE_URL) WebBrowser.openBrowserAsync(PRIVACY_NOTICE_URL);
-  }
 
   function handleBack() {
     signOut();
@@ -75,14 +70,18 @@ export default function ConsentScreen() {
               <View style={[styles.iconBox, { backgroundColor: theme.accentLight }]}>
                 <FileText size={18} color={theme.accent} strokeWidth={2} />
               </View>
-              <Text style={styles.cardTitle}>Aviso de privacidad</Text>
+              <Text style={styles.cardTitle}>Aviso de privacidad y términos</Text>
             </View>
             <Text style={styles.cardText}>
               Consulta qué datos recopilamos, para qué los usamos, quién puede acceder y qué derechos tienes.
             </Text>
-            <TouchableOpacity onPress={openPrivacyNotice} style={styles.link}>
+            <TouchableOpacity onPress={() => router.push('/legal/privacy')} style={styles.link}>
               <Text style={[styles.linkText, { color: theme.accent }]}>Leer aviso de privacidad</Text>
-              <ExternalLink size={14} color={theme.accent} strokeWidth={2} />
+              <ChevronRight size={14} color={theme.accent} strokeWidth={2} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/legal/terms')} style={styles.link}>
+              <Text style={[styles.linkText, { color: theme.accent }]}>Leer términos y condiciones</Text>
+              <ChevronRight size={14} color={theme.accent} strokeWidth={2} />
             </TouchableOpacity>
           </View>
 
@@ -103,7 +102,9 @@ export default function ConsentScreen() {
             >
               {ack && <Check size={14} color="#fff" strokeWidth={3} />}
             </View>
-            <Text style={styles.checkLabel}>Confirmo que recibí el Aviso de Privacidad</Text>
+            <Text style={styles.checkLabel}>
+              Acepto los Términos y condiciones y confirmo que recibí el Aviso de Privacidad
+            </Text>
           </TouchableOpacity>
 
           {/* Permiso opcional */}

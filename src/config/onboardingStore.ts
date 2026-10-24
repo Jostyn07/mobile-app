@@ -4,6 +4,7 @@ import { CONSENT_VERSION } from './legal';
 
 export type ConsentRecord = {
   privacyNoticeAck: boolean;
+  termsAccepted: boolean;
   healthDataSharing: boolean;
   version: string;
   acceptedAt: string; // ISO 8601
@@ -37,6 +38,7 @@ export async function saveConsent(healthDataSharing: boolean): Promise<void> {
   await saveOnboarding({
     consent: {
       privacyNoticeAck: true,
+      termsAccepted: true,
       healthDataSharing,
       version: CONSENT_VERSION,
       acceptedAt: new Date().toISOString(),
@@ -45,5 +47,6 @@ export async function saveConsent(healthDataSharing: boolean): Promise<void> {
 }
 
 export function hasCurrentConsent(state: OnboardingState): boolean {
-  return state.consent?.privacyNoticeAck === true && state.consent.version === CONSENT_VERSION;
+  const c = state.consent;
+  return c?.privacyNoticeAck === true && c.termsAccepted === true && c.version === CONSENT_VERSION;
 }

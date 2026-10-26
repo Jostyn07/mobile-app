@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 import * as AuthSession from 'expo-auth-session';
-import * as Linking from 'expo-linking';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import {
   CognitoUser,
   CognitoUserSession,
@@ -21,10 +21,16 @@ const discovery: AuthSession.DiscoveryDocument = {
 //   Expo Go      → exp://<IP>:8081/--/auth   (cambia si cambia la IP del computador)
 //   web local    → http://localhost:8081/auth
 // Todas deben estar en Cognito → Cliente de aplicación → URL de devolución de llamadas.
-export const googleRedirectUri =
-  Platform.OS === 'web'
-    ? AuthSession.makeRedirectUri({ path: 'auth' })
-    : Linking.createURL('auth');
+const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+const expoHost = Constants.expoConfig?.hostUri; // ej. "192.168.0.238:8081"
+
+function resolveRedirectUri(): string {
+  if (Platform.OS === 'web') return AuthSession.makeRedirectUri({ path: 'auth' });
+  if (isExpoGo && expoHost) return `exp://${expoHost}/--/auth`;
+  return 'mobileapp://auth';
+}
+
+export const googleRedirectUri = resolveRedirectUri();
 
 // En web se guarda el verificador PKCE mientras la página va a Google y vuelve.
 const WEB_PKCE_KEY = 'ytc-google-pkce';
@@ -82,7 +88,9 @@ export async function signInWithGoogle(): Promise<boolean> {
   if (!COGNITO_DOMAIN) throw new GoogleNotConfiguredError();
 
   // Debe estar en Cognito → Cliente de aplicación → URL de devolución de llamadas
-  if (__DEV__) console.log('[Google] redirectUri:', googleRedirectUri);
+  if (__DEV__) {
+    console.log('[Google] redirectUri:', googleRedirectUri, '| entorno:', Constants.executionEnvironment, '| host:', expoHost);
+  }
 
   const request = createRequest();
 

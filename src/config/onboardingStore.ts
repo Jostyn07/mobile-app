@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { userPool } from './cognito';
+import { apiPost, API_URL } from './api';
 import { CONSENT_VERSION } from './legal';
 import type { ConditionId } from '../content/conditions';
 
@@ -21,10 +23,62 @@ export type DiabetesDetails = {
   dateUnknown: boolean;
 };
 
+export type CodeSource = 'rxnorm' | 'unii' | 'manual'; // manual = escrito libre, no normalizado
+
+export type Medication = {
+  id: string;
+  name: string;
+  rxcui: string | null; // código RxNorm del medicamento o de la concentración elegida
+  strength: string; // concentración y presentación, ej. "500 mg Tab"
+  source: CodeSource;
+  dose: string; // lo que declara la persona; nunca lo completa el catálogo
+  frequency: string;
+  reason: string;
+  status: 'current' | 'past';
+};
+
+export type AllergyCategory = 'medication' | 'food' | 'environment';
+
+export type AllergyReaction = 'skin' | 'swelling' | 'breathing' | 'digestive' | 'other';
+
+export type Allergy = {
+  id: string;
+  substance: string;
+  code: string | null;
+  source: CodeSource;
+  category: AllergyCategory;
+  reactions: AllergyReaction[];
+  verification: 'confirmed' | 'self_reported';
+};
+
+// null = todavía no respondió. No es lo mismo que "ninguna" ni que "no sé".
+export type AllergyStatus = 'has_allergies' | 'none_known' | 'unsure' | null;
+
+export type MedicalHistory = {
+  otherConditions: ConditionId[];
+  familyHistory: string[];
+  noFamilyHistory: boolean;
+  medications: Medication[];
+  noMedications: boolean;
+  allergies: Allergy[];
+  allergyStatus: AllergyStatus;
+};
+
+export const EMPTY_HISTORY: MedicalHistory = {
+  otherConditions: [],
+  familyHistory: [],
+  noFamilyHistory: false,
+  medications: [],
+  noMedications: false,
+  allergies: [],
+  allergyStatus: null,
+};
+
 export type OnboardingState = {
   consent?: ConsentRecord;
   conditions?: ConditionId[];
   diabetes?: DiabetesDetails;
+  history?: MedicalHistory;
 };
 
 // Un registro por usuario (varias cuentas pueden usar el mismo celular).
@@ -47,7 +101,18 @@ async function saveOnboarding(patch: Partial<OnboardingState>): Promise<void> {
   await AsyncStorage.setItem(storageKey(), JSON.stringify({ ...current, ...patch }));
 }
 
+// Registra el consentimiento en el servidor (constancia legal) y luego en el celular.
+// Si el servidor no responde, lanza error y el usuario debe reintentar.
 export async function saveConsent(healthDataSharing: boolean): Promise<void> {
+  if (API_URL) {
+    await apiPost('/me/consents', {
+      version: CONSENT_VERSION,
+      privacyNoticeAck: true,
+      termsAccepted: true,
+      healthDataSharing,
+      platform: Platform.OS === 'ios' || Platform.OS === 'android' ? Platform.OS : 'web',
+    });
+  }
   await saveOnboarding({
     consent: {
       privacyNoticeAck: true,
@@ -70,4 +135,12 @@ export async function saveConditions(conditions: ConditionId[]): Promise<void> {
 
 export async function saveDiabetesDetails(details: DiabetesDetails): Promise<void> {
   await saveOnboarding({ diabetes: details });
+}
+
+export async function saveHistory(history: MedicalHistory): Promise<void> {
+  await saveOnboarding({ history });
+}
+
+export async function clearOnboarding(): Promise<void> {
+  await AsyncStorage.removeItem(storageKey());
 }

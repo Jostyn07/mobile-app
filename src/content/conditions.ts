@@ -43,3 +43,14 @@ export const CONDITIONS: Condition[] = [
   { id: 'weight', name: 'Sobrepeso u obesidad', detail: 'Control de peso', icon: Scale },
   { id: 'other', name: 'Otra condición', detail: 'No está en la lista', icon: Plus },
 ];
+
+// Antecedentes familiares (padres, hermanos o abuelos).
+export const FAMILY_CONDITIONS = [
+  'Diabetes',
+  'Presión arterial alta',
+  'Colesterol alto',
+  'Enfermedad cardiaca',
+  'Derrame cerebral',
+  'Enfermedad renal',
+  'Cáncer',
+] as const;

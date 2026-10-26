@@ -146,6 +146,18 @@ export function hasValidSession(): Promise<boolean> {
   });
 }
 
+// ID token vigente para llamar a la API de Yo te cuido (AWS API Gateway).
+// Incluye correo y nombre del usuario. Si venció, Cognito lo renueva con el refresh token.
+export function getIdToken(): Promise<string | null> {
+  const user = userPool.getCurrentUser();
+  if (!user) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    user.getSession((err: any, session: any) => {
+      resolve(!err && session?.isValid() ? session.getIdToken().getJwtToken() : null);
+    });
+  });
+}
+
 export function signOut(): void {
   userPool.getCurrentUser()?.signOut();
 }

@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import * as AuthSession from 'expo-auth-session';
+import * as Linking from 'expo-linking';
 import {
   CognitoUser,
   CognitoUserSession,
@@ -16,13 +17,14 @@ const discovery: AuthSession.DiscoveryDocument = {
 };
 
 // URL a la que Cognito devuelve al usuario. Cada entorno genera una distinta:
-//   build propio → mobileapp://auth
-//   Expo Go      → exp://<IP>:8081/--/auth
+//   app compilado (development build / tiendas) → mobileapp://auth
+//   Expo Go      → exp://<IP>:8081/--/auth   (cambia si cambia la IP del computador)
 //   web local    → http://localhost:8081/auth
-export const googleRedirectUri = AuthSession.makeRedirectUri({
-  scheme: 'mobileapp',
-  path: 'auth',
-});
+// Todas deben estar en Cognito → Cliente de aplicación → URL de devolución de llamadas.
+export const googleRedirectUri =
+  Platform.OS === 'web'
+    ? AuthSession.makeRedirectUri({ path: 'auth' })
+    : Linking.createURL('auth');
 
 // En web se guarda el verificador PKCE mientras la página va a Google y vuelve.
 const WEB_PKCE_KEY = 'ytc-google-pkce';

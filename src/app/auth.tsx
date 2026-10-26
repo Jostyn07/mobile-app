@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { hasValidSession } from '../config/authService';
-import { completeGoogleRedirect } from '../config/googleAuth';
+import { completeGoogleRedirect, completeNativeRedirect } from '../config/googleAuth';
 import { routeAfterLogin } from '../config/postLogin';
 import { BrandColors } from '../constants/theme';
 
@@ -23,13 +23,26 @@ export default function AuthCallbackScreen() {
       return;
     }
 
-    // Móvil: el login lo completa GoogleButton; si el usuario queda aquí, se le redirige.
-    const id = setTimeout(async () => {
-      const loggedIn = await hasValidSession();
-      if (loggedIn) await routeAfterLogin();
-      else router.replace('/login');
-    }, 1500);
-    return () => clearTimeout(id);
+    // Móvil: si llegó el código aquí se canjea; si no, se espera la sesión hasta 15 s.
+    let cancelled = false;
+    (async () => {
+      try {
+        if (params.code) await completeNativeRedirect(params.code);
+      } catch (err: any) {
+        if (__DEV__) console.warn('[Google] /auth canje falló:', err?.message ?? err);
+      }
+      for (let i = 0; i < 30 && !cancelled; i++) {
+        if (await hasValidSession()) {
+          await routeAfterLogin();
+          return;
+        }
+        await new Promise((r) => setTimeout(r, 500));
+      }
+      if (!cancelled) router.replace({ pathname: '/login', params: { error: 'google' } });
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (

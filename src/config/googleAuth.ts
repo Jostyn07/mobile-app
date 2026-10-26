@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import * as AuthSession from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
 import Constants from 'expo-constants';
 import {
   CognitoUser,
@@ -9,6 +10,9 @@ import {
   CognitoRefreshToken,
 } from 'amazon-cognito-identity-js';
 import { COGNITO_CONFIG, COGNITO_DOMAIN, userPool, authStorage } from './cognito';
+
+// Cierra la ventana de login cuando el navegador vuelve al app.
+WebBrowser.maybeCompleteAuthSession();
 
 const discovery: AuthSession.DiscoveryDocument = {
   authorizationEndpoint: `https://${COGNITO_DOMAIN}/oauth2/authorize`,
@@ -52,6 +56,28 @@ function createRequest() {
     usePKCE: true,
     extraParams: { identity_provider: 'Google' },
   });
+}
+
+// Login nativo en curso: el código solo se puede canjear una vez, así que
+// GoogleButton y la pantalla /auth comparten el mismo canje.
+let pendingVerifier: string | null = null;
+const exchanges = new Map<string, Promise<void>>();
+
+function exchangeOnce(code: string, verifier: string): Promise<void> {
+  let p = exchanges.get(code);
+  if (!p) {
+    p = exchangeAndSaveSession(code, verifier);
+    exchanges.set(code, p);
+  }
+  return p;
+}
+
+// Móvil: la pantalla /auth recibió ?code= (a veces antes de que promptAsync responda).
+export async function completeNativeRedirect(code: string): Promise<boolean> {
+  if (!pendingVerifier) return false;
+  if (__DEV__) console.log('[Google] canje desde /auth');
+  await exchangeOnce(code, pendingVerifier);
+  return true;
 }
 
 // Cambia el código por tokens y guarda la sesión igual que un login con contraseña.
@@ -105,7 +131,10 @@ export async function signInWithGoogle(): Promise<boolean> {
     return new Promise<boolean>(() => {}); // la página se va a Google
   }
 
+  await request.makeAuthUrlAsync(discovery);
+  pendingVerifier = request.codeVerifier ?? null;
   const result = await request.promptAsync(discovery, { preferEphemeralSession: true });
+  if (__DEV__) console.log('[Google] resultado:', result.type);
 
   if (result.type === 'cancel' || result.type === 'dismiss') return false;
   if (result.type !== 'success') {
@@ -116,7 +145,12 @@ export async function signInWithGoogle(): Promise<boolean> {
     );
   }
 
-  await exchangeAndSaveSession(result.params.code, request.codeVerifier ?? '');
+  try {
+    await exchangeOnce(result.params.code, request.codeVerifier ?? '');
+  } catch (err: any) {
+    if (__DEV__) console.warn('[Google] canje falló:', err?.message ?? err);
+    throw err;
+  }
   return true;
 }
 

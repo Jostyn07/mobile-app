@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { userPool } from './cognito';
 import { CONSENT_VERSION } from './legal';
+import type { ConditionId } from '../content/conditions';
 
 export type ConsentRecord = {
   privacyNoticeAck: boolean;
@@ -12,6 +13,7 @@ export type ConsentRecord = {
 
 export type OnboardingState = {
   consent?: ConsentRecord;
+  conditions?: ConditionId[];
 };
 
 // Un registro por usuario (varias cuentas pueden usar el mismo celular).
@@ -49,4 +51,8 @@ export async function saveConsent(healthDataSharing: boolean): Promise<void> {
 export function hasCurrentConsent(state: OnboardingState): boolean {
   const c = state.consent;
   return c?.privacyNoticeAck === true && c.termsAccepted === true && c.version === CONSENT_VERSION;
+}
+
+export async function saveConditions(conditions: ConditionId[]): Promise<void> {
+  await saveOnboarding({ conditions });
 }

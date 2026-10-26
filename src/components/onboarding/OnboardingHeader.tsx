@@ -4,7 +4,7 @@ import { ChevronLeft } from 'lucide-react-native';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { BorderRadius, FontSize, Spacing } from '../../constants/theme';
 
-export const ONBOARDING_TOTAL_STEPS = 7;
+export const ONBOARDING_TOTAL_STEPS = 8;
 
 type Props = {
   step: number;

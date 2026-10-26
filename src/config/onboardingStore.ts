@@ -11,9 +11,20 @@ export type ConsentRecord = {
   acceptedAt: string; // ISO 8601
 };
 
+export type DiabetesType = 'type1' | 'type2' | 'unsure';
+
+export type MonthYear = { year: number; month: number }; // month 1–12
+
+export type DiabetesDetails = {
+  type: DiabetesType;
+  diagnosedAt: MonthYear | null; // null = no la eligió o no la recuerda
+  dateUnknown: boolean;
+};
+
 export type OnboardingState = {
   consent?: ConsentRecord;
   conditions?: ConditionId[];
+  diabetes?: DiabetesDetails;
 };
 
 // Un registro por usuario (varias cuentas pueden usar el mismo celular).
@@ -55,4 +66,8 @@ export function hasCurrentConsent(state: OnboardingState): boolean {
 
 export async function saveConditions(conditions: ConditionId[]): Promise<void> {
   await saveOnboarding({ conditions });
+}
+
+export async function saveDiabetesDetails(details: DiabetesDetails): Promise<void> {
+  await saveOnboarding({ diabetes: details });
 }

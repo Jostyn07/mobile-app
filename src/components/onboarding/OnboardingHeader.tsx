@@ -1,6 +1,7 @@
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft, LogOut } from 'lucide-react-native';
+import { signOut } from '../../config/authService';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { BorderRadius, FontSize, Spacing } from '../../constants/theme';
 
@@ -19,6 +20,19 @@ export default function OnboardingHeader({ step, onBack }: Props) {
     if (router.canGoBack()) router.back();
   }
 
+  function doSignOut() {
+    signOut();
+    router.replace('/login');
+  }
+
+  function handleSignOut() {
+    if (Platform.OS === 'web') return doSignOut();
+    Alert.alert('Cerrar sesión', '¿Quieres cerrar sesión? Tu avance queda guardado.', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Cerrar sesión', style: 'destructive', onPress: doSignOut },
+    ]);
+  }
+
   return (
     <View style={styles.wrap}>
       <View style={styles.row}>
@@ -30,7 +44,14 @@ export default function OnboardingHeader({ step, onBack }: Props) {
           style={styles.logo}
           resizeMode="contain"
         />
-        <View style={styles.back} />
+        <TouchableOpacity
+          onPress={handleSignOut}
+          hitSlop={12}
+          style={[styles.back, styles.right]}
+          accessibilityLabel="Cerrar sesión"
+        >
+          <LogOut size={22} color="#64748B" strokeWidth={2} />
+        </TouchableOpacity>
       </View>
 
       <Text style={styles.step}>
@@ -63,6 +84,9 @@ const styles = StyleSheet.create({
   },
   back: {
     width: 32,
+  },
+  right: {
+    alignItems: 'flex-end',
   },
   logo: {
     width: 150,

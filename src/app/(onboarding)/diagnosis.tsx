@@ -45,7 +45,7 @@ export default function DiagnosisScreen() {
     setSaving(true);
     try {
       await saveConditions(selected);
-      router.push('/history');
+      router.push(selected.includes('diabetes') ? '/diabetes' : '/history');
     } catch {
       setError('No se pudo guardar. Intenta de nuevo.');
     } finally {

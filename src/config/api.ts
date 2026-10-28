@@ -13,7 +13,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(method: 'GET' | 'POST', path: string, opts: { params?: Record<string, string>; body?: unknown } = {}): Promise<T> {
+async function request<T>(method: 'GET' | 'POST' | 'PUT', path: string, opts: { params?: Record<string, string>; body?: unknown } = {}): Promise<T> {
   if (!API_URL) throw new ApiError(0, 'api_not_configured');
 
   const token = await getIdToken();
@@ -50,4 +50,8 @@ export function apiGet<T>(path: string, params: Record<string, string> = {}): Pr
 
 export function apiPost<T>(path: string, body: unknown): Promise<T> {
   return request<T>('POST', path, { body });
+}
+
+export function apiPut<T>(path: string, body: unknown): Promise<T> {
+  return request<T>('PUT', path, { body });
 }

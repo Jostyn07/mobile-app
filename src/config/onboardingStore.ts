@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { userPool } from './cognito';
-import { apiPost, API_URL } from './api';
+import { apiPost, apiPut, API_URL } from './api';
 import { CONSENT_VERSION } from './legal';
 import type { ConditionId } from '../content/conditions';
 
@@ -74,11 +74,30 @@ export const EMPTY_HISTORY: MedicalHistory = {
   allergyStatus: null,
 };
 
+export type GlucoseMethod = 'glucometer' | 'cgm' | 'other';
+export type GlucoseSetup = {
+  methods: GlucoseMethod[];
+  methodStatus: 'not_measuring' | 'unsure' | null; // solo si no marcó ningún método
+  monitoringPlan: 'yes' | 'no' | 'unsure';
+  reminders: 'yes' | 'no' | 'undecided';
+};
+
+export type LabKind = 'hba1c' | 'eye' | 'kidney' | 'feet';
+export type LabStatus = 'has_data' | 'done_no_data' | 'not_done' | 'unsure';
+export type LabRecord = {
+  status: LabStatus;
+  date: MonthYear | null; // solo si status = has_data
+  value: string; // HbA1c en % o resultado renal; vacío si no lo sabe
+};
+export type LabRecords = Record<LabKind, LabRecord>;
+
 export type OnboardingState = {
   consent?: ConsentRecord;
   conditions?: ConditionId[];
   diabetes?: DiabetesDetails;
   history?: MedicalHistory;
+  glucose?: GlucoseSetup;
+  labs?: LabRecords;
 };
 
 // Un registro por usuario (varias cuentas pueden usar el mismo celular).
@@ -129,11 +148,14 @@ export function hasCurrentConsent(state: OnboardingState): boolean {
   return c?.privacyNoticeAck === true && c.termsAccepted === true && c.version === CONSENT_VERSION;
 }
 
+// Pasos 2, 3 y 5: primero el servidor; si falla, lanza error y el usuario reintenta.
 export async function saveConditions(conditions: ConditionId[]): Promise<void> {
+  if (API_URL) await apiPut('/me/conditions', { conditions });
   await saveOnboarding({ conditions });
 }
 
 export async function saveDiabetesDetails(details: DiabetesDetails): Promise<void> {
+  if (API_URL) await apiPut('/me/diabetes', details);
   await saveOnboarding({ diabetes: details });
 }
 
@@ -143,4 +165,14 @@ export async function saveHistory(history: MedicalHistory): Promise<void> {
 
 export async function clearOnboarding(): Promise<void> {
   await AsyncStorage.removeItem(storageKey());
+}
+
+export async function saveGlucoseSetup(glucose: GlucoseSetup): Promise<void> {
+  if (API_URL) await apiPut('/me/glucose', glucose);
+  await saveOnboarding({ glucose });
+}
+
+export async function saveLabs(labs: LabRecords): Promise<void> {
+  if (API_URL) await apiPut('/me/labs', labs);
+  await saveOnboarding({ labs });
 }

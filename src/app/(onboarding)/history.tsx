@@ -1,111 +1,137 @@
-import { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { useEffect, useRef, useState, type ComponentType } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Droplet, Heart, Pill, TriangleAlert } from 'lucide-react-native';
+import { TestTube, Eye, Bean, Footprints } from 'lucide-react-native';
 import { useAppTheme } from '../../theme/ThemeContext';
-import { FontSize, Spacing, Layout } from '../../constants/theme';
-import { CONDITIONS, FAMILY_CONDITIONS, type ConditionId } from '../../content/conditions';
+import { BorderRadius, FontSize, Spacing, Layout, Shadow } from '../../constants/theme';
 import {
   getOnboarding,
-  saveHistory,
-  EMPTY_HISTORY,
-  type MedicalHistory,
+  saveLabs,
+  type LabKind,
+  type LabRecord,
+  type LabRecords,
+  type LabStatus,
 } from '../../config/onboardingStore';
 import OnboardingHeader from '../../components/onboarding/OnboardingHeader';
 import GradientButton from '../../components/auth/GradientButton';
 import FormBanner from '../../components/auth/FormBanner';
-import Accordion from '../../components/form/Accordion';
-import CheckRow from '../../components/form/CheckRow';
-import MedicationsSection from '../../components/history/MedicationsSection';
+import MonthYearPicker from '../../components/form/MonthYearPicker';
 import {
   ScrollIntoViewProvider,
   useScrollIntoViewHost,
   useKeyboardVisible,
+  type ViewRef,
 } from '../../components/form/ScrollIntoView';
-import AllergiesSection from '../../components/history/AllergiesSection';
 
-type Section = 'conditions' | 'family' | 'medications' | 'allergies';
+type Icon = ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
 
-function countLabel(n: number, singular: string, plural: string) {
-  return `${n} ${n === 1 ? singular : plural}`;
+type SectionDef = {
+  kind: LabKind;
+  icon: Icon;
+  title: string;
+  question: string;
+  hasLabel: string;
+  noDataLabel: string;
+  value?: { placeholder: string; numeric?: boolean };
+};
+
+const SECTIONS: SectionDef[] = [
+  {
+    kind: 'hba1c',
+    icon: TestTube,
+    title: 'Hemoglobina glicosilada (HbA1c)',
+    question: '¿Tienes el resultado de tu último examen?',
+    hasLabel: 'Sí, tengo el resultado',
+    noDataLabel: 'Me hice el examen, no recuerdo el resultado',
+    value: { placeholder: 'Resultado (%)', numeric: true },
+  },
+  {
+    kind: 'eye',
+    icon: Eye,
+    title: 'Control de ojos',
+    question: '¿Te has hecho un examen de ojos?',
+    hasLabel: 'Sí, tengo la fecha',
+    noDataLabel: 'Me hice el control, no recuerdo la fecha',
+  },
+  {
+    kind: 'kidney',
+    icon: Bean,
+    title: 'Control de riñones',
+    question: '¿Te han hecho exámenes de orina o de sangre para los riñones?',
+    hasLabel: 'Sí, tengo resultados',
+    noDataLabel: 'Me hicieron el control, no recuerdo el resultado',
+    value: { placeholder: 'Resultado (si lo sabes)' },
+  },
+  {
+    kind: 'feet',
+    icon: Footprints,
+    title: 'Control de pies',
+    question: '¿Te han revisado los pies y la sensibilidad?',
+    hasLabel: 'Sí, tengo la fecha',
+    noDataLabel: 'Me hicieron el control, no recuerdo la fecha',
+  },
+];
+
+const EMPTY: LabRecord = { status: 'unsure', date: null, value: '' };
+
+// HbA1c en %, con punto o coma decimal (ej. 7,2).
+function parseHba1c(v: string): number | null {
+  const n = Number(v.replace(',', '.'));
+  return Number.isFinite(n) && n >= 3 && n <= 20 ? n : null;
 }
 
-export default function HistoryScreen() {
+function Radio({ selected, color }: { selected: boolean; color: string }) {
+  return (
+    <View style={[styles.radio, { borderColor: selected ? color : '#CBD5E1' }]}>
+      {selected && <View style={[styles.radioDot, { backgroundColor: color }]} />}
+    </View>
+  );
+}
+
+export default function LabsScreen() {
   const { theme } = useAppTheme();
   const { scrollRef, contentRef, scrollTo } = useScrollIntoViewHost();
   const keyboardVisible = useKeyboardVisible();
+  const detailRefs = useRef<Partial<Record<LabKind, ViewRef | null>>>({});
 
-  const [history, setHistory] = useState<MedicalHistory>(EMPTY_HISTORY);
-  const [mainConditions, setMainConditions] = useState<ConditionId[]>([]);
-  const [open, setOpen] = useState<Section | null>(null);
+  // null = sin responder
+  const [records, setRecords] = useState<Record<LabKind, LabRecord | null>>({
+    hba1c: null, eye: null, kidney: null, feet: null,
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getOnboarding().then((s) => {
-      setMainConditions(s.conditions ?? []);
-      if (s.history) setHistory({ ...EMPTY_HISTORY, ...s.history });
-    });
+    getOnboarding().then(({ labs }) => labs && setRecords(labs));
   }, []);
 
-  // Las condiciones elegidas en el paso 2 no se repiten aquí.
-  const otherOptions = useMemo(
-    () => CONDITIONS.filter((c) => c.id !== 'other' && !mainConditions.includes(c.id)),
-    [mainConditions],
-  );
-
-  function update(patch: Partial<MedicalHistory>) {
-    setHistory((h) => ({ ...h, ...patch }));
+  function update(kind: LabKind, patch: Partial<LabRecord>) {
+    setRecords((r) => ({ ...r, [kind]: { ...(r[kind] ?? EMPTY), ...patch } }));
   }
 
-  function toggleSection(s: Section) {
-    setOpen((cur) => (cur === s ? null : s));
+  function chooseStatus(kind: LabKind, status: LabStatus) {
+    // Fecha y resultado solo se guardan si dice que tiene el dato.
+    update(kind, status === 'has_data' ? { status } : { status, date: null, value: '' });
   }
 
-  function toggleOther(id: ConditionId) {
-    const list = history.otherConditions;
-    update({ otherConditions: list.includes(id) ? list.filter((x) => x !== id) : [...list, id] });
-  }
-
-  function toggleFamily(name: string) {
-    const list = history.familyHistory;
-    update({
-      familyHistory: list.includes(name) ? list.filter((x) => x !== name) : [...list, name],
-      noFamilyHistory: false,
-    });
-  }
-
-  const summaries: Record<Section, string | undefined> = {
-    conditions: history.otherConditions.length
-      ? countLabel(history.otherConditions.length, 'seleccionada', 'seleccionadas')
-      : undefined,
-    family: history.noFamilyHistory
-      ? 'Ninguno conocido'
-      : history.familyHistory.length
-        ? countLabel(history.familyHistory.length, 'antecedente', 'antecedentes')
-        : undefined,
-    medications: history.noMedications
-      ? 'No toma medicamentos'
-      : history.medications.length
-        ? countLabel(history.medications.length, 'medicamento', 'medicamentos')
-        : undefined,
-    allergies:
-      history.allergyStatus === 'none_known'
-        ? 'Sin alergias conocidas'
-        : history.allergyStatus === 'unsure'
-          ? 'No está seguro/a'
-          : history.allergies.length
-            ? countLabel(history.allergies.length, 'alergia', 'alergias')
-            : undefined,
-  };
+  const hba1c = records.hba1c;
+  const hba1cInvalid = hba1c?.status === 'has_data' && hba1c.value.trim() !== '' && parseHba1c(hba1c.value) === null;
+  const canContinue = SECTIONS.every((s) => records[s.kind] !== null) && !hba1cInvalid;
 
   async function handleContinue() {
+    if (!canContinue) return;
     setError(null);
     setSaving(true);
     try {
-      await saveHistory(history);
-      router.push('/glucose');
+      const clean = Object.fromEntries(
+        SECTIONS.map(({ kind }) => {
+          const r = records[kind]!;
+          return [kind, { ...r, value: kind === 'hba1c' ? r.value.trim().replace(',', '.') : r.value.trim() }];
+        }),
+      ) as LabRecords;
+      await saveLabs(clean);
+      router.push('/safety');
     } catch {
       setError('No se pudo guardar. Intenta de nuevo.');
     } finally {
@@ -115,103 +141,103 @@ export default function HistoryScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior="padding"
-      >
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <ScrollView
           ref={scrollRef}
           contentContainerStyle={[styles.container, keyboardVisible && styles.containerKeyboard]}
           keyboardShouldPersistTaps="handled"
         >
           <ScrollIntoViewProvider value={scrollTo}>
-          <View ref={contentRef} collapsable={false} style={styles.content}>
-            <OnboardingHeader step={4} />
+            <View ref={contentRef} collapsable={false} style={styles.content}>
+              <OnboardingHeader step={6} />
 
-            <Text style={styles.title}>Tu historial</Text>
-            <Text style={styles.subtitle}>
-              Queremos conocer un poco más sobre tu salud para adaptar el seguimiento a tus necesidades.
-            </Text>
+              <Text style={styles.title}>Laboratorios y controles</Text>
+              <Text style={styles.subtitle}>
+                Registra tus últimos exámenes y controles. Si no recuerdas un dato, puedes indicarlo.
+              </Text>
 
-            {error && <FormBanner type="error" message={error} />}
+              {error && <FormBanner type="error" message={error} />}
 
-            <Accordion
-              icon={Droplet}
-              title="Otras condiciones médicas"
-              summary={summaries.conditions}
-              open={open === 'conditions'}
-              onToggle={() => toggleSection('conditions')}
-            >
-              {otherOptions.map((c) => (
-                <CheckRow
-                  key={c.id}
-                  label={c.name}
-                  detail={c.detail}
-                  checked={history.otherConditions.includes(c.id)}
-                  onPress={() => toggleOther(c.id)}
-                />
-              ))}
-            </Accordion>
+              {SECTIONS.map((s) => {
+                const r = records[s.kind];
+                const I = s.icon;
+                const options: { value: LabStatus; label: string }[] = [
+                  { value: 'has_data', label: s.hasLabel },
+                  { value: 'done_no_data', label: s.noDataLabel },
+                  { value: 'not_done', label: 'No lo he realizado' },
+                  { value: 'unsure', label: 'No estoy seguro/a' },
+                ];
+                return (
+                  <View key={s.kind} style={[styles.card, Shadow.sm]}>
+                    <View style={styles.sectionHeader}>
+                      <View style={[styles.bubble, { backgroundColor: theme.accentLight }]}>
+                        <I size={16} color={theme.accent} strokeWidth={2} />
+                      </View>
+                      <Text style={styles.sectionTitle}>{s.title}</Text>
+                    </View>
+                    <Text style={styles.question}>{s.question}</Text>
 
-            <Accordion
-              icon={Heart}
-              title="Antecedentes familiares"
-              summary={summaries.family}
-              open={open === 'family'}
-              onToggle={() => toggleSection('family')}
-            >
-              {FAMILY_CONDITIONS.map((name) => (
-                <CheckRow
-                  key={name}
-                  label={name}
-                  checked={history.familyHistory.includes(name)}
-                  onPress={() => toggleFamily(name)}
-                />
-              ))}
-              <CheckRow
-                label="Ninguno conocido"
-                checked={history.noFamilyHistory}
-                onPress={() => update({ familyHistory: [], noFamilyHistory: !history.noFamilyHistory })}
-              />
-            </Accordion>
+                    {options.map((o) => {
+                      const selected = r?.status === o.value;
+                      return (
+                        <TouchableOpacity
+                          key={o.value}
+                          onPress={() => chooseStatus(s.kind, o.value)}
+                          activeOpacity={0.8}
+                          accessibilityRole="radio"
+                          accessibilityState={{ selected }}
+                          style={[styles.row, selected && { borderColor: theme.accent, backgroundColor: theme.accentLight }]}
+                        >
+                          <Radio selected={selected} color={theme.accent} />
+                          <Text style={styles.rowLabel}>{o.label}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
 
-            <Accordion
-              icon={Pill}
-              title="Medicamentos actuales"
-              summary={summaries.medications}
-              open={open === 'medications'}
-              onToggle={() => toggleSection('medications')}
-            >
-              <MedicationsSection
-                medications={history.medications}
-                noMedications={history.noMedications}
-                onChange={(medications, noMedications) => update({ medications, noMedications })}
-              />
-            </Accordion>
-
-            <Accordion
-              icon={TriangleAlert}
-              title="Alergias"
-              summary={summaries.allergies}
-              open={open === 'allergies'}
-              onToggle={() => toggleSection('allergies')}
-            >
-              <AllergiesSection
-                allergies={history.allergies}
-                status={history.allergyStatus}
-                onChange={(allergies, allergyStatus) => update({ allergies, allergyStatus })}
-              />
-            </Accordion>
-          </View>
+                    {r?.status === 'has_data' && (
+                      <View
+                        style={styles.details}
+                        collapsable={false}
+                        ref={(el) => {
+                          detailRefs.current[s.kind] = el;
+                        }}
+                      >
+                        {s.value && (
+                          <TextInput
+                            style={[styles.input, s.kind === 'hba1c' && hba1cInvalid && styles.inputError]}
+                            placeholder={s.value.placeholder}
+                            placeholderTextColor="#94A3B8"
+                            keyboardType={s.value.numeric ? 'decimal-pad' : 'default'}
+                            maxLength={s.value.numeric ? 5 : 60}
+                            value={r.value}
+                            onChangeText={(t) => update(s.kind, { value: t })}
+                            onFocus={() => scrollTo({ current: detailRefs.current[s.kind] ?? null })}
+                          />
+                        )}
+                        {s.kind === 'hba1c' && hba1cInvalid && (
+                          <Text style={styles.errorText}>Escribe un valor entre 3 y 20.</Text>
+                        )}
+                        <MonthYearPicker
+                          value={r.date}
+                          onChange={(date) => update(s.kind, { date })}
+                          placeholder="Fecha del examen"
+                          yearsBack={15}
+                        />
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
           </ScrollIntoViewProvider>
         </ScrollView>
 
         {!keyboardVisible && (
-        <View style={[styles.footer, { backgroundColor: theme.background }]}>
-          <View style={styles.content}>
-            <GradientButton title="Guardar y continuar" onPress={handleContinue} loading={saving} />
+          <View style={[styles.footer, { backgroundColor: theme.background }]}>
+            <View style={styles.content}>
+              <GradientButton title="Continuar" onPress={handleContinue} loading={saving} disabled={!canContinue} />
+            </View>
           </View>
-        </View>
         )}
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -219,35 +245,58 @@ export default function HistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-  },
+  safe: { flex: 1 },
   container: {
     flexGrow: 1,
     paddingHorizontal: Spacing[5],
     paddingTop: Spacing[3],
     paddingBottom: Spacing[6],
   },
-  content: {
-    width: '100%',
-    maxWidth: Layout.maxContentWidth,
-    alignSelf: 'center',
+  containerKeyboard: { paddingBottom: 320 },
+  content: { width: '100%', maxWidth: Layout.maxContentWidth, alignSelf: 'center' },
+  title: { fontSize: FontSize['2xl'], fontWeight: '800', color: '#0F172A', marginBottom: Spacing[2] },
+  subtitle: { fontSize: FontSize.sm, color: '#64748B', lineHeight: FontSize.sm * 1.5, marginBottom: Spacing[5] },
+  card: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: BorderRadius.lg,
+    padding: Spacing[3],
+    marginBottom: Spacing[3],
+    gap: Spacing[2],
   },
-  title: {
-    fontSize: FontSize['2xl'],
-    fontWeight: '800',
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing[3] },
+  bubble: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  sectionTitle: { flex: 1, fontSize: FontSize.md, fontWeight: '700', color: '#0F172A' },
+  question: { fontSize: FontSize.sm, color: '#64748B' },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing[3],
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing[3],
+    paddingVertical: Spacing[2],
+    minHeight: 44,
+    backgroundColor: '#fff',
+  },
+  rowLabel: { flex: 1, fontSize: FontSize.md, color: '#0F172A' },
+  radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  radioDot: { width: 10, height: 10, borderRadius: 5 },
+  details: { gap: Spacing[2], marginTop: Spacing[1] },
+  input: {
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: Spacing[3],
+    height: 44,
+    fontSize: FontSize.md,
     color: '#0F172A',
-    marginBottom: Spacing[2],
+    backgroundColor: '#fff',
   },
-  subtitle: {
-    fontSize: FontSize.sm,
-    color: '#64748B',
-    lineHeight: FontSize.sm * 1.5,
-    marginBottom: Spacing[5],
-  },
-  containerKeyboard: {
-    paddingBottom: 320, // espacio para poder subir el campo por encima del teclado
-  },
+  inputError: { borderColor: '#B91C1C' },
+  errorText: { fontSize: FontSize.sm, color: '#B91C1C' },
   footer: {
     paddingHorizontal: Spacing[5],
     paddingTop: Spacing[3],

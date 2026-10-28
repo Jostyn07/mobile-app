@@ -91,6 +91,24 @@ export type LabRecord = {
 };
 export type LabRecords = Record<LabKind, LabRecord>;
 
+export type YesNoUnsure = 'yes' | 'no' | 'unsure';
+export type SafetyAnswers = {
+  hypoglycemia: YesNoUnsure;
+  hypoNeededHelp: 'yes' | 'no' | 'dont_remember' | null; // solo si hypoglycemia = yes
+  urgentSymptoms: YesNoUnsure;
+  urgentContact: boolean | null; // solo si urgentSymptoms = yes
+  footChanges: YesNoUnsure;
+  footContact: boolean | null; // solo si footChanges = yes
+};
+
+export type ReminderKind = 'medication' | 'glucose' | 'hydration' | 'appointments';
+export type NotifyChannel = 'in_app' | 'sms' | 'email';
+export type PlanPreferences = {
+  reminders: ReminderKind[]; // vacío = no quiere recordatorios
+  channels: NotifyChannel[]; // vacío si no quiere recordatorios
+  teamContact: boolean;
+};
+
 export type OnboardingState = {
   consent?: ConsentRecord;
   conditions?: ConditionId[];
@@ -98,6 +116,8 @@ export type OnboardingState = {
   history?: MedicalHistory;
   glucose?: GlucoseSetup;
   labs?: LabRecords;
+  safety?: SafetyAnswers;
+  plan?: PlanPreferences;
 };
 
 // Un registro por usuario (varias cuentas pueden usar el mismo celular).
@@ -175,4 +195,14 @@ export async function saveGlucoseSetup(glucose: GlucoseSetup): Promise<void> {
 export async function saveLabs(labs: LabRecords): Promise<void> {
   if (API_URL) await apiPut('/me/labs', labs);
   await saveOnboarding({ labs });
+}
+
+export async function saveSafety(safety: SafetyAnswers): Promise<void> {
+  if (API_URL) await apiPut('/me/safety', safety);
+  await saveOnboarding({ safety });
+}
+
+export async function savePlan(plan: PlanPreferences): Promise<void> {
+  if (API_URL) await apiPut('/me/plan', plan);
+  await saveOnboarding({ plan });
 }
